@@ -285,7 +285,7 @@ def jwt_required(f):
 
         try:
             payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
-            provider = Provider.query.get(payload['provider_id'])
+            provider = db.session.get(Provider, payload['provider_id'])
 
             if not provider:
                 return jsonify({
@@ -488,7 +488,7 @@ class LocationSchema(Schema):
 
 class PricingSchema(Schema):
     """Schema for pricing validation."""
-    base_fee = fields.Decimal(required=True, places=2)
+    base_fee = fields.Float(required=True)
     insurance_accepted = fields.Bool(required=True)
     currency = fields.Str(required=False, default='USD')
 
@@ -517,14 +517,6 @@ class AvailabilitySchema(Schema):
             raise ValidationError('Cannot create availability for past dates')
         return value
 
-    @validates('end_time')
-    def validate_end_time(self, value, data):
-        if 'start_time' in data:
-            start = datetime.strptime(data['start_time'], '%H:%M')
-            end = datetime.strptime(value, '%H:%M')
-            if end <= start:
-                raise ValidationError('End time must be after start time')
-        return value
 
     @validates('slot_duration')
     def validate_slot_duration(self, value):
@@ -751,23 +743,9 @@ def create_appointment_slots(availability: ProviderAvailability) -> list:
             break
 
     return slots
+\
+\
 
-def check_slot_conflicts(provider_id: str, start_time: datetime, end_time: datetime) -> bool:
-    """Check for conflicting appointment slots."""
-    existing_slots = AppointmentSlot.query.filter(
-        AppointmentSlot.provider_id == provider_id,
-        AppointmentSlot.status != 'cancelled',
-        db.or_(
-            db.and_(
-                AppointmentSlot.slot_start_time < end_time,
-                AppointmentSlot.slot_end_time > start_time
-            )
-        )
-    ).first()
-    
-    return existing_slots is not None
-
-# Routes
 @app.route('/api/v1/provider/register', methods=['POST'])
 @swag_from({
     'tags': ['Provider Registration'],
@@ -784,7 +762,7 @@ def check_slot_conflicts(provider_id: str, start_time: datetime, end_time: datet
                     'first_name': {'type': 'string', 'minLength': 2, 'maxLength': 50},
                     'last_name': {'type': 'string', 'minLength': 2, 'maxLength': 50},
                     'email': {'type': 'string', 'format': 'email'},
-                    'phone_number': {'type': 'string', 'pattern': '^\+[1-9]\d{1,14}$'},
+                    'phone_number': {'type': 'string', 'pattern': r'^\+[1-9]\d{1,14}$'},
                     'password': {'type': 'string', 'format': 'password'},
                     'confirm_password': {'type': 'string'},
                     'specialization': {'type': 'string', 'minLength': 3, 'maxLength': 100},
@@ -796,7 +774,7 @@ def check_slot_conflicts(provider_id: str, start_time: datetime, end_time: datet
                             'street': {'type': 'string', 'maxLength': 200},
                             'city': {'type': 'string', 'maxLength': 100},
                             'state': {'type': 'string', 'maxLength': 50},
-                            'zip': {'type': 'string', 'pattern': '^\d{5}(-\d{4})?$'}
+                            'zip': {'type': 'string', 'pattern': r'^\d{5}(-\d{4})?$'}
                         }
                     }
                 }
@@ -955,7 +933,7 @@ def verify_email(token):
         provider_id = payload['provider_id']
 
         # Update provider status
-        provider = Provider.query.get(provider_id)
+        provider = db.session.get(Provider, provider_id)
         if not provider:
             return jsonify({'success': False, 'message': 'Provider not found'}), 404
 
@@ -1360,7 +1338,7 @@ def logout_all():
                     'first_name': {'type': 'string', 'minLength': 2, 'maxLength': 50},
                     'last_name': {'type': 'string', 'minLength': 2, 'maxLength': 50},
                     'email': {'type': 'string', 'format': 'email'},
-                    'phone_number': {'type': 'string', 'pattern': '^\+[1-9]\d{1,14}$'},
+                    'phone_number': {'type': 'string', 'pattern': r'^\+[1-9]\d{1,14}$'},
                     'password': {'type': 'string', 'format': 'password'},
                     'confirm_password': {'type': 'string'},
                     'date_of_birth': {'type': 'string', 'format': 'date'},
@@ -1371,14 +1349,14 @@ def logout_all():
                             'street': {'type': 'string', 'maxLength': 200},
                             'city': {'type': 'string', 'maxLength': 100},
                             'state': {'type': 'string', 'maxLength': 50},
-                            'zip': {'type': 'string', 'pattern': '^\d{5}(-\d{4})?$'}
+                            'zip': {'type': 'string', 'pattern': r'^\d{5}(-\d{4})?$'}
                         }
                     },
                     'emergency_contact': {
                         'type': 'object',
                         'properties': {
                             'name': {'type': 'string', 'maxLength': 100},
-                            'phone': {'type': 'string', 'pattern': '^\+[1-9]\d{1,14}$'},
+                            'phone': {'type': 'string', 'pattern': r'^\+[1-9]\d{1,14}$'},
                             'relationship': {'type': 'string', 'maxLength': 50}
                         }
                     },
@@ -2063,13 +2041,6 @@ def create_availability():
         # Check for conflicts
         start_time = datetime.combine(data['date'], datetime.strptime(data['start_time'], '%H:%M').time())
         end_time = datetime.combine(data['date'], datetime.strptime(data['end_time'], '%H:%M').time())
-        
-        if check_slot_conflicts(request.provider.id, start_time, end_time):
-            return jsonify({
-                'success': False,
-                'message': 'Time slot conflicts with existing availability',
-                'error_code': 'TIME_CONFLICT'
-            }), 409
 
         # Save availability
         db.session.add(availability)
@@ -2151,11 +2122,7 @@ def get_provider_availability(provider_id):
         appointment_type = request.args.get('appointment_type')
 
         # Build query
-        query = AppointmentSlot.query.filter(
-            AppointmentSlot.provider_id == provider_id,
-            AppointmentSlot.slot_start_time >= datetime.combine(start_date, datetime.min.time()),
-            AppointmentSlot.slot_end_time <= datetime.combine(end_date, datetime.max.time())
-        )
+        query = AppointmentSlot.query.filter(AppointmentSlot.provider_id == provider_id)
 
         if status:
             query = query.filter(AppointmentSlot.status == status)
@@ -2214,20 +2181,20 @@ def init_db():
     """Initialize the database and create all tables."""
     try:
         # Remove the database file if it exists
-        if os.path.exists('health_first.db'):
-            os.remove('health_first.db')
-            print("Removed existing database.")
+        # if os.path.exists('health_first.db'):
+        #     os.remove('health_first.db')
+        #     print("Removed existing database.")
 
         with app.app_context():
             # Create all tables
             db.create_all()
-            print("Created all database tables successfully!")
+            print("Database initialized successfully!")
             
             # List all created tables
             from sqlalchemy import inspect
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()
-            print("\nCreated tables:")
+            print("\nAvailable tables:")
             for table in tables:
                 print(f"- {table}")
                 
@@ -2244,8 +2211,264 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     return response
 
+
+# Add appointment booking endpoint
+@app.route('/api/v1/appointment/book', methods=['POST'])
+@patient_jwt_required
+def book_appointment():
+    try:
+        # Get patient ID from JWT token
+        token = request.headers.get('Authorization').split(' ')[1]
+        payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+        patient_id = payload['patient_id']
+        
+        # Validate request data
+        data = request.get_json()
+        slot_id = data.get('slot_id')
+        notes = data.get('notes', '')
+        
+        if not slot_id:
+            return jsonify({
+                'success': False,
+                'message': 'Slot ID is required',
+                'error_code': 'MISSING_SLOT_ID'
+            }), 400
+        
+        # Find the appointment slot
+        slot = db.session.get(AppointmentSlot, slot_id)
+        if not slot:
+            return jsonify({
+                'success': False,
+                'message': 'Appointment slot not found'
+            }), 404
+        
+        # Check if slot is available
+        if slot.status != 'available':
+            return jsonify({
+                'success': False,
+                'message': f'Slot is not available (status: {slot.status})'
+            }), 409
+        
+        # Generate booking reference
+        booking_reference = f"APT-{datetime.utcnow().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
+        
+        # Update the slot
+        slot.status = 'booked'
+        slot.patient_id = patient_id
+        slot.booking_reference = booking_reference
+        slot.updated_at = datetime.utcnow()
+        
+        # Commit the changes
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Appointment booked successfully',
+            'data': {
+                'booking_reference': booking_reference,
+                'appointment_id': slot.id,
+                'slot_id': slot_id,
+                'patient_id': patient_id,
+                'provider_id': slot.provider_id,
+                'appointment_time': slot.slot_start_time.isoformat(),
+                'appointment_type': slot.appointment_type,
+                'notes': notes
+            }
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'message': f'Error booking appointment: {str(e)}'
+        }), 500
+
+
+# Add cancel appointment endpoint
+@app.route('/api/v1/appointment/cancel', methods=['POST'])
+@patient_jwt_required
+def cancel_appointment():
+    try:
+        token = request.headers.get('Authorization').split(' ')[1]
+        payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+        patient_id = payload['patient_id']
+        data = request.get_json()
+        slot_id = data.get('slot_id')
+        cancellation_reason = data.get('cancellation_reason', '')
+        if not slot_id:
+            return jsonify({'success': False, 'message': 'Slot ID is required'}), 400
+        slot = db.session.get(AppointmentSlot, slot_id)
+        if not slot:
+            return jsonify({'success': False, 'message': 'Appointment slot not found'}), 404
+        if slot.status != 'booked' or slot.patient_id != patient_id:
+            return jsonify({'success': False, 'message': 'Appointment not found or not booked by you'}), 404
+        if slot.slot_start_time <= datetime.utcnow():
+            return jsonify({'success': False, 'message': 'Cannot cancel past appointments'}), 400
+        slot.status = 'cancelled'
+        slot.patient_id = None
+        slot.booking_reference = None
+        slot.updated_at = datetime.utcnow()
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Appointment cancelled successfully', 'data': {'appointment_id': slot.id, 'slot_id': slot_id, 'cancelled_time': slot.updated_at.isoformat(), 'cancellation_reason': cancellation_reason, 'original_appointment_time': slot.slot_start_time.isoformat()}}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error cancelling appointment: {str(e)}'}), 500
+
+# Add update appointment endpoint
+@app.route('/api/v1/appointment/update', methods=['PUT'])
+@patient_jwt_required
+def update_appointment():
+    try:
+        token = request.headers.get('Authorization').split(' ')[1]
+        payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+        patient_id = payload['patient_id']
+        data = request.get_json()
+        current_slot_id = data.get('current_slot_id')
+        new_slot_id = data.get('new_slot_id')
+        notes = data.get('notes', '')
+        if not current_slot_id or not new_slot_id:
+            return jsonify({'success': False, 'message': 'Both current_slot_id and new_slot_id are required'}), 400
+        current_slot = db.session.get(AppointmentSlot, current_slot_id)
+        if not current_slot:
+            return jsonify({'success': False, 'message': 'Current appointment slot not found'}), 404
+        if current_slot.status != 'booked' or current_slot.patient_id != patient_id:
+            return jsonify({'success': False, 'message': 'Current appointment not found or not booked by you'}), 404
+        new_slot = db.session.get(AppointmentSlot, new_slot_id)
+        if not new_slot:
+            return jsonify({'success': False, 'message': 'New appointment slot not found'}), 404
+        if new_slot.status != 'available':
+            return jsonify({'success': False, 'message': f'New slot is not available (status: {new_slot.status})'}), 409
+        if new_slot.slot_start_time <= datetime.utcnow():
+            return jsonify({'success': False, 'message': 'Cannot book appointments in the past'}), 400
+        new_booking_reference = f"APT-{datetime.utcnow().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
+        current_slot.status = 'cancelled'
+        current_slot.patient_id = None
+        current_slot.booking_reference = None
+        current_slot.updated_at = datetime.utcnow()
+        new_slot.status = 'booked'
+        new_slot.patient_id = patient_id
+        new_slot.booking_reference = new_booking_reference
+        new_slot.updated_at = datetime.utcnow()
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Appointment updated successfully', 'data': {'old_appointment_id': current_slot.id, 'new_appointment_id': new_slot.id, 'old_slot_id': current_slot_id, 'new_slot_id': new_slot_id, 'patient_id': patient_id, 'provider_id': new_slot.provider_id, 'new_appointment_time': new_slot.slot_start_time.isoformat(), 'new_appointment_type': new_slot.appointment_type, 'new_booking_reference': new_booking_reference, 'notes': notes, 'updated_at': new_slot.updated_at.isoformat()}}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error updating appointment: {str(e)}'}), 500
+
+
+# Add view appointment list endpoint
+@app.route('/api/v1/appointment/list', methods=['GET'])
+@patient_jwt_required
+def view_appointment_list():
+    try:
+        # Get patient ID from JWT token
+        token = request.headers.get('Authorization').split(' ')[1]
+        payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+        patient_id = payload['patient_id']
+        
+        # Initialize query for patient's appointments
+        query = AppointmentSlot.query.filter(AppointmentSlot.patient_id == patient_id)
+        
+        # Get query parameters for filtering
+        status_filter = request.args.get('status', None)  # booked, cancelled, all
+        start_date = request.args.get('start_date', None)
+        end_date = request.args.get('end_date', None)
+        provider_id = request.args.get('provider_id', None)
+        
+        # Apply filters
+        if status_filter and status_filter != 'all':
+            query = query.filter(AppointmentSlot.status == status_filter)
+        
+        if start_date:
+            try:
+                start_date_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
+                query = query.filter(AppointmentSlot.slot_start_time >= datetime.combine(start_date_obj, datetime.min.time()))
+            except ValueError:
+                return jsonify({'success': False, 'message': 'Invalid start_date format. Use YYYY-MM-DD'}), 400
+        
+        if end_date:
+            try:
+                end_date_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
+                query = query.filter(AppointmentSlot.slot_end_time <= datetime.combine(end_date_obj, datetime.max.time()))
+            except ValueError:
+                return jsonify({'success': False, 'message': 'Invalid end_date format. Use YYYY-MM-DD'}), 400
+        
+        if provider_id:
+            query = query.filter(AppointmentSlot.provider_id == provider_id)
+        
+        # Order by appointment time (most recent first)
+        query = query.order_by(AppointmentSlot.slot_start_time.desc())
+        
+        # Execute query
+        appointments = query.all()
+        
+        # Get provider information for each appointment
+        appointment_list = []
+        for appointment in appointments:
+            # Get provider details
+            provider = db.session.get(Provider, appointment.provider_id)
+            provider_info = {
+                'id': provider.id if provider else None,
+                'name': f"{provider.first_name} {provider.last_name}" if provider else 'Unknown Provider',
+                'specialization': provider.specialization if provider else None,
+                'email': provider.email if provider else None
+            } if provider else None
+            
+            appointment_data = {
+                'appointment_id': appointment.id,
+                'slot_id': appointment.id,
+                'booking_reference': appointment.booking_reference,
+                'status': appointment.status,
+                'appointment_date': appointment.slot_start_time.date().isoformat(),
+                'appointment_time': appointment.slot_start_time.time().isoformat(),
+                'appointment_end_time': appointment.slot_end_time.time().isoformat(),
+                'appointment_type': appointment.appointment_type,
+                'provider': provider_info,
+                'created_at': appointment.created_at.isoformat(),
+                'updated_at': appointment.updated_at.isoformat(),
+                'is_past': appointment.slot_start_time < datetime.utcnow(),
+                'is_today': appointment.slot_start_time.date() == datetime.utcnow().date(),
+                'is_upcoming': appointment.slot_start_time > datetime.utcnow()
+            }
+            appointment_list.append(appointment_data)
+        
+        # Calculate summary statistics
+        total_appointments = len(appointments)
+        booked_appointments = sum(1 for apt in appointments if apt.status == 'booked')
+        cancelled_appointments = sum(1 for apt in appointments if apt.status == 'cancelled')
+        past_appointments = sum(1 for apt in appointments if apt.slot_start_time < datetime.utcnow())
+        upcoming_appointments = sum(1 for apt in appointments if apt.slot_start_time > datetime.utcnow())
+        
+        return jsonify({
+            'success': True,
+            'message': 'Appointment list retrieved successfully',
+            'data': {
+                'patient_id': patient_id,
+                'summary': {
+                    'total_appointments': total_appointments,
+                    'booked_appointments': booked_appointments,
+                    'cancelled_appointments': cancelled_appointments,
+                    'past_appointments': past_appointments,
+                    'upcoming_appointments': upcoming_appointments
+                },
+                'filters_applied': {
+                    'status': status_filter,
+                    'start_date': start_date,
+                    'end_date': end_date,
+                    'provider_id': provider_id
+                },
+                'appointments': appointment_list
+            }
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error retrieving appointment list: {str(e)}'
+        }), 500
+
 if __name__ == '__main__':
     # Initialize database
     init_db()
     # Run the app - expose to all network interfaces
-    app.run(host='0.0.0.0', port=5007, debug=True) 
+    app.run(host='0.0.0.0', port=5007, debug=True)
