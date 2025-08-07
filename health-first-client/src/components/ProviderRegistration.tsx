@@ -350,39 +350,103 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({ onNavigateT
       style={{
         minHeight: '100vh',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        position: 'relative',
+        overflow: 'hidden'
       }}
     >
-      <Container size="md" py={40}>
+      {/* Animated background elements */}
+      <div style={{
+        position: 'absolute',
+        top: '-50%',
+        left: '-50%',
+        width: '200%',
+        height: '200%',
+        background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+        animation: 'float 20s ease-in-out infinite',
+        pointerEvents: 'none'
+      }} />
+      
+      <Container size="md" py={60}>
         <Center>
           <Paper
             shadow="xl"
-            p={40}
-            radius="lg"
+            p={50}
+            radius="xl"
             style={{
               width: '100%',
-              maxWidth: 800,
+              maxWidth: 900,
               background: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(10px)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              position: 'relative',
+              overflow: 'hidden'
             }}
           >
+            {/* Decorative elements */}
+            <div style={{
+              position: 'absolute',
+              top: '-20px',
+              right: '-20px',
+              width: '100px',
+              height: '100px',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              borderRadius: '50%',
+              opacity: 0.1,
+              transform: 'rotate(45deg)'
+            }} />
+            
+            <div style={{
+              position: 'absolute',
+              bottom: '-30px',
+              left: '-30px',
+              width: '120px',
+              height: '120px',
+              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              borderRadius: '50%',
+              opacity: 0.08,
+              transform: 'rotate(-30deg)'
+            }} />
+
             {/* Header Section */}
-            <Stack align="center" mb={30}>
+            <Stack align="center" mb={40}>
               <Box
                 style={{
-                  background: 'linear-gradient(135deg, #2563eb 0%, #059669 100%)',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   borderRadius: '50%',
-                  padding: 16,
+                  padding: 20,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  boxShadow: '0 10px 30px rgba(102, 126, 234, 0.4)',
+                  position: 'relative',
+                  marginBottom: '20px'
                 }}
               >
-                <IconMedicalCross size={32} color="white" />
+                <IconMedicalCross size={36} color="white" />
+                {/* Glow effect */}
+                <div style={{
+                  position: 'absolute',
+                  top: '-10px',
+                  left: '-10px',
+                  right: '-10px',
+                  bottom: '-10px',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  borderRadius: '50%',
+                  opacity: 0.3,
+                  filter: 'blur(10px)',
+                  zIndex: -1
+                }} />
               </Box>
-              <Title order={1} size="h2" fw={700} c="dark.8">
+              <Title order={1} size="h2" fw={700} c="dark.8" style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>
                 Provider Registration
               </Title>
-              <Text size="sm" c="dimmed" ta="center">
+              <Text size="sm" c="dimmed" ta="center" style={{ lineHeight: 1.6 }}>
                 Join our healthcare network and start helping patients
               </Text>
             </Stack>
@@ -470,6 +534,35 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({ onNavigateT
                                   error={touched.firstName && errors.firstName}
                                   disabled={registrationState.isLoading}
                                   required
+                                  size="md"
+                                  radius="lg"
+                                  styles={{
+                                    input: {
+                                      borderColor: '#e5e7eb',
+                                      backgroundColor: '#fafafa',
+                                      fontSize: '16px',
+                                      fontWeight: 500,
+                                      transition: 'all 0.3s ease',
+                                      '&:focus': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff',
+                                        boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                                        transform: 'translateY(-1px)'
+                                      },
+                                      '&:hover': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff'
+                                      },
+                                      '&::placeholder': {
+                                        color: '#9ca3af',
+                                        fontWeight: 400
+                                      }
+                                    },
+                                    label: {
+                                      fontWeight: 600,
+                                      color: '#374151'
+                                    }
+                                  }}
                                 />
                               )}
                             </Field>
@@ -483,6 +576,35 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({ onNavigateT
                                   error={touched.lastName && errors.lastName}
                                   disabled={registrationState.isLoading}
                                   required
+                                  size="md"
+                                  radius="lg"
+                                  styles={{
+                                    input: {
+                                      borderColor: '#e5e7eb',
+                                      backgroundColor: '#fafafa',
+                                      fontSize: '16px',
+                                      fontWeight: 500,
+                                      transition: 'all 0.3s ease',
+                                      '&:focus': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff',
+                                        boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                                        transform: 'translateY(-1px)'
+                                      },
+                                      '&:hover': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff'
+                                      },
+                                      '&::placeholder': {
+                                        color: '#9ca3af',
+                                        fontWeight: 400
+                                      }
+                                    },
+                                    label: {
+                                      fontWeight: 600,
+                                      color: '#374151'
+                                    }
+                                  }}
                                 />
                               )}
                             </Field>
@@ -499,6 +621,35 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({ onNavigateT
                                   error={touched.email && errors.email}
                                   disabled={registrationState.isLoading}
                                   required
+                                  size="md"
+                                  radius="lg"
+                                  styles={{
+                                    input: {
+                                      borderColor: '#e5e7eb',
+                                      backgroundColor: '#fafafa',
+                                      fontSize: '16px',
+                                      fontWeight: 500,
+                                      transition: 'all 0.3s ease',
+                                      '&:focus': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff',
+                                        boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                                        transform: 'translateY(-1px)'
+                                      },
+                                      '&:hover': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff'
+                                      },
+                                      '&::placeholder': {
+                                        color: '#9ca3af',
+                                        fontWeight: 400
+                                      }
+                                    },
+                                    label: {
+                                      fontWeight: 600,
+                                      color: '#374151'
+                                    }
+                                  }}
                                 />
                               )}
                             </Field>
@@ -513,6 +664,35 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({ onNavigateT
                                   error={touched.phone && errors.phone}
                                   disabled={registrationState.isLoading}
                                   required
+                                  size="md"
+                                  radius="lg"
+                                  styles={{
+                                    input: {
+                                      borderColor: '#e5e7eb',
+                                      backgroundColor: '#fafafa',
+                                      fontSize: '16px',
+                                      fontWeight: 500,
+                                      transition: 'all 0.3s ease',
+                                      '&:focus': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff',
+                                        boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                                        transform: 'translateY(-1px)'
+                                      },
+                                      '&:hover': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff'
+                                      },
+                                      '&::placeholder': {
+                                        color: '#9ca3af',
+                                        fontWeight: 400
+                                      }
+                                    },
+                                    label: {
+                                      fontWeight: 600,
+                                      color: '#374151'
+                                    }
+                                  }}
                                 />
                               )}
                             </Field>
@@ -537,6 +717,35 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({ onNavigateT
                                 onChange={(file) => handlePhotoUpload(file, setFieldValue)}
                                 disabled={registrationState.isLoading}
                                 style={{ flex: 1 }}
+                                size="md"
+                                radius="lg"
+                                styles={{
+                                  input: {
+                                    borderColor: '#e5e7eb',
+                                    backgroundColor: '#fafafa',
+                                    fontSize: '16px',
+                                    fontWeight: 500,
+                                    transition: 'all 0.3s ease',
+                                    '&:focus': {
+                                      borderColor: '#667eea',
+                                      backgroundColor: '#ffffff',
+                                      boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                                      transform: 'translateY(-1px)'
+                                    },
+                                    '&:hover': {
+                                      borderColor: '#667eea',
+                                      backgroundColor: '#ffffff'
+                                    },
+                                    '&::placeholder': {
+                                      color: '#9ca3af',
+                                      fontWeight: 400
+                                    }
+                                  },
+                                  label: {
+                                    fontWeight: 600,
+                                    color: '#374151'
+                                  }
+                                }}
                               />
                             </Group>
                             <Text size="xs" c="dimmed" mt="xs">
@@ -565,6 +774,35 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({ onNavigateT
                                   error={touched.licenseNumber && errors.licenseNumber}
                                   disabled={registrationState.isLoading}
                                   required
+                                  size="md"
+                                  radius="lg"
+                                  styles={{
+                                    input: {
+                                      borderColor: '#e5e7eb',
+                                      backgroundColor: '#fafafa',
+                                      fontSize: '16px',
+                                      fontWeight: 500,
+                                      transition: 'all 0.3s ease',
+                                      '&:focus': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff',
+                                        boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                                        transform: 'translateY(-1px)'
+                                      },
+                                      '&:hover': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff'
+                                      },
+                                      '&::placeholder': {
+                                        color: '#9ca3af',
+                                        fontWeight: 400
+                                      }
+                                    },
+                                    label: {
+                                      fontWeight: 600,
+                                      color: '#374151'
+                                    }
+                                  }}
                                 />
                               )}
                             </Field>
@@ -586,6 +824,35 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({ onNavigateT
                                     form.setFieldValue('specialization', value);
                                   }}
                                   onBlur={() => form.setFieldTouched('specialization', true)}
+                                  size="md"
+                                  radius="lg"
+                                  styles={{
+                                    input: {
+                                      borderColor: '#e5e7eb',
+                                      backgroundColor: '#fafafa',
+                                      fontSize: '16px',
+                                      fontWeight: 500,
+                                      transition: 'all 0.3s ease',
+                                      '&:focus': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff',
+                                        boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                                        transform: 'translateY(-1px)'
+                                      },
+                                      '&:hover': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff'
+                                      },
+                                      '&::placeholder': {
+                                        color: '#9ca3af',
+                                        fontWeight: 400
+                                      }
+                                    },
+                                    label: {
+                                      fontWeight: 600,
+                                      color: '#374151'
+                                    }
+                                  }}
                                 />
                               )}
                             </Field>
@@ -609,6 +876,35 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({ onNavigateT
                                     form.setFieldValue('yearsExperience', value);
                                   }}
                                   onBlur={() => form.setFieldTouched('yearsExperience', true)}
+                                  size="md"
+                                  radius="lg"
+                                  styles={{
+                                    input: {
+                                      borderColor: '#e5e7eb',
+                                      backgroundColor: '#fafafa',
+                                      fontSize: '16px',
+                                      fontWeight: 500,
+                                      transition: 'all 0.3s ease',
+                                      '&:focus': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff',
+                                        boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                                        transform: 'translateY(-1px)'
+                                      },
+                                      '&:hover': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff'
+                                      },
+                                      '&::placeholder': {
+                                        color: '#9ca3af',
+                                        fontWeight: 400
+                                      }
+                                    },
+                                    label: {
+                                      fontWeight: 600,
+                                      color: '#374151'
+                                    }
+                                  }}
                                 />
                               )}
                             </Field>
@@ -623,6 +919,35 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({ onNavigateT
                                   error={touched.medicalDegree && errors.medicalDegree}
                                   disabled={registrationState.isLoading}
                                   required
+                                  size="md"
+                                  radius="lg"
+                                  styles={{
+                                    input: {
+                                      borderColor: '#e5e7eb',
+                                      backgroundColor: '#fafafa',
+                                      fontSize: '16px',
+                                      fontWeight: 500,
+                                      transition: 'all 0.3s ease',
+                                      '&:focus': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff',
+                                        boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                                        transform: 'translateY(-1px)'
+                                      },
+                                      '&:hover': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff'
+                                      },
+                                      '&::placeholder': {
+                                        color: '#9ca3af',
+                                        fontWeight: 400
+                                      }
+                                    },
+                                    label: {
+                                      fontWeight: 600,
+                                      color: '#374151'
+                                    }
+                                  }}
                                 />
                               )}
                             </Field>
@@ -649,6 +974,35 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({ onNavigateT
                                   error={touched.clinicName && errors.clinicName}
                                   disabled={registrationState.isLoading}
                                   required
+                                  size="md"
+                                  radius="lg"
+                                  styles={{
+                                    input: {
+                                      borderColor: '#e5e7eb',
+                                      backgroundColor: '#fafafa',
+                                      fontSize: '16px',
+                                      fontWeight: 500,
+                                      transition: 'all 0.3s ease',
+                                      '&:focus': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff',
+                                        boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                                        transform: 'translateY(-1px)'
+                                      },
+                                      '&:hover': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff'
+                                      },
+                                      '&::placeholder': {
+                                        color: '#9ca3af',
+                                        fontWeight: 400
+                                      }
+                                    },
+                                    label: {
+                                      fontWeight: 600,
+                                      color: '#374151'
+                                    }
+                                  }}
                                 />
                               )}
                             </Field>
@@ -669,6 +1023,35 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({ onNavigateT
                                     form.setFieldValue('practiceType', value);
                                   }}
                                   onBlur={() => form.setFieldTouched('practiceType', true)}
+                                  size="md"
+                                  radius="lg"
+                                  styles={{
+                                    input: {
+                                      borderColor: '#e5e7eb',
+                                      backgroundColor: '#fafafa',
+                                      fontSize: '16px',
+                                      fontWeight: 500,
+                                      transition: 'all 0.3s ease',
+                                      '&:focus': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff',
+                                        boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                                        transform: 'translateY(-1px)'
+                                      },
+                                      '&:hover': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff'
+                                      },
+                                      '&::placeholder': {
+                                        color: '#9ca3af',
+                                        fontWeight: 400
+                                      }
+                                    },
+                                    label: {
+                                      fontWeight: 600,
+                                      color: '#374151'
+                                    }
+                                  }}
                                 />
                               )}
                             </Field>
@@ -685,6 +1068,35 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({ onNavigateT
                                 disabled={registrationState.isLoading}
                                 mt="md"
                                 required
+                                size="md"
+                                radius="lg"
+                                styles={{
+                                  input: {
+                                    borderColor: '#e5e7eb',
+                                    backgroundColor: '#fafafa',
+                                    fontSize: '16px',
+                                    fontWeight: 500,
+                                    transition: 'all 0.3s ease',
+                                    '&:focus': {
+                                      borderColor: '#667eea',
+                                      backgroundColor: '#ffffff',
+                                      boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                                      transform: 'translateY(-1px)'
+                                    },
+                                    '&:hover': {
+                                      borderColor: '#667eea',
+                                      backgroundColor: '#ffffff'
+                                    },
+                                    '&::placeholder': {
+                                      color: '#9ca3af',
+                                      fontWeight: 400
+                                    }
+                                  },
+                                  label: {
+                                    fontWeight: 600,
+                                    color: '#374151'
+                                  }
+                                }}
                               />
                             )}
                           </Field>
@@ -699,6 +1111,35 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({ onNavigateT
                                   error={touched.city && errors.city}
                                   disabled={registrationState.isLoading}
                                   required
+                                  size="md"
+                                  radius="lg"
+                                  styles={{
+                                    input: {
+                                      borderColor: '#e5e7eb',
+                                      backgroundColor: '#fafafa',
+                                      fontSize: '16px',
+                                      fontWeight: 500,
+                                      transition: 'all 0.3s ease',
+                                      '&:focus': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff',
+                                        boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                                        transform: 'translateY(-1px)'
+                                      },
+                                      '&:hover': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff'
+                                      },
+                                      '&::placeholder': {
+                                        color: '#9ca3af',
+                                        fontWeight: 400
+                                      }
+                                    },
+                                    label: {
+                                      fontWeight: 600,
+                                      color: '#374151'
+                                    }
+                                  }}
                                 />
                               )}
                             </Field>
@@ -719,6 +1160,35 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({ onNavigateT
                                     form.setFieldValue('state', value);
                                   }}
                                   onBlur={() => form.setFieldTouched('state', true)}
+                                  size="md"
+                                  radius="lg"
+                                  styles={{
+                                    input: {
+                                      borderColor: '#e5e7eb',
+                                      backgroundColor: '#fafafa',
+                                      fontSize: '16px',
+                                      fontWeight: 500,
+                                      transition: 'all 0.3s ease',
+                                      '&:focus': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff',
+                                        boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                                        transform: 'translateY(-1px)'
+                                      },
+                                      '&:hover': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff'
+                                      },
+                                      '&::placeholder': {
+                                        color: '#9ca3af',
+                                        fontWeight: 400
+                                      }
+                                    },
+                                    label: {
+                                      fontWeight: 600,
+                                      color: '#374151'
+                                    }
+                                  }}
                                 />
                               )}
                             </Field>
@@ -732,6 +1202,35 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({ onNavigateT
                                   error={touched.zipCode && errors.zipCode}
                                   disabled={registrationState.isLoading}
                                   required
+                                  size="md"
+                                  radius="lg"
+                                  styles={{
+                                    input: {
+                                      borderColor: '#e5e7eb',
+                                      backgroundColor: '#fafafa',
+                                      fontSize: '16px',
+                                      fontWeight: 500,
+                                      transition: 'all 0.3s ease',
+                                      '&:focus': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff',
+                                        boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                                        transform: 'translateY(-1px)'
+                                      },
+                                      '&:hover': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff'
+                                      },
+                                      '&::placeholder': {
+                                        color: '#9ca3af',
+                                        fontWeight: 400
+                                      }
+                                    },
+                                    label: {
+                                      fontWeight: 600,
+                                      color: '#374151'
+                                    }
+                                  }}
                                 />
                               )}
                             </Field>
@@ -762,6 +1261,35 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({ onNavigateT
                                     error={touched.password && errors.password}
                                     disabled={registrationState.isLoading}
                                     required
+                                    size="md"
+                                    radius="lg"
+                                    styles={{
+                                      input: {
+                                        borderColor: '#e5e7eb',
+                                        backgroundColor: '#fafafa',
+                                        fontSize: '16px',
+                                        fontWeight: 500,
+                                        transition: 'all 0.3s ease',
+                                        '&:focus': {
+                                          borderColor: '#667eea',
+                                          backgroundColor: '#ffffff',
+                                          boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                                          transform: 'translateY(-1px)'
+                                        },
+                                        '&:hover': {
+                                          borderColor: '#667eea',
+                                          backgroundColor: '#ffffff'
+                                        },
+                                        '&::placeholder': {
+                                          color: '#9ca3af',
+                                          fontWeight: 400
+                                        }
+                                      },
+                                      label: {
+                                        fontWeight: 600,
+                                        color: '#374151'
+                                      }
+                                    }}
                                   />
                                   {values.password && (
                                     <Box mt="xs">
@@ -798,6 +1326,35 @@ const ProviderRegistration: React.FC<ProviderRegistrationProps> = ({ onNavigateT
                                   error={touched.confirmPassword && errors.confirmPassword}
                                   disabled={registrationState.isLoading}
                                   required
+                                  size="md"
+                                  radius="lg"
+                                  styles={{
+                                    input: {
+                                      borderColor: '#e5e7eb',
+                                      backgroundColor: '#fafafa',
+                                      fontSize: '16px',
+                                      fontWeight: 500,
+                                      transition: 'all 0.3s ease',
+                                      '&:focus': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff',
+                                        boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                                        transform: 'translateY(-1px)'
+                                      },
+                                      '&:hover': {
+                                        borderColor: '#667eea',
+                                        backgroundColor: '#ffffff'
+                                      },
+                                      '&::placeholder': {
+                                        color: '#9ca3af',
+                                        fontWeight: 400
+                                      }
+                                    },
+                                    label: {
+                                      fontWeight: 600,
+                                      color: '#374151'
+                                    }
+                                  }}
                                 />
                               )}
                             </Field>

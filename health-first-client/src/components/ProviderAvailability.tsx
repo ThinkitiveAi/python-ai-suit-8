@@ -1,1477 +1,728 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Paper,
   Title,
   Text,
-  Button,
   Select,
+  Button,
   Stack,
   Group,
   Box,
   Center,
-  Alert,
-  Modal,
-  Anchor,
-  BackgroundImage,
-  ActionIcon,
-  Card,
-  Badge,
-  Tooltip,
-  Menu,
-  TextInput,
-  Textarea,
-  Checkbox,
-  SimpleGrid,
-  Timeline,
-  ScrollArea,
   Divider,
-  Switch,
-  NumberInput,
-  Tabs,
-  Grid,
+  ActionIcon,
+  SimpleGrid,
+  TextInput,
   Loader,
-  Notification,
-  Progress,
-  RingProgress,
-  Drawer,
-  Kbd,
+  Alert,
 } from '@mantine/core';
+import { TimeInput, DateInput } from '@mantine/dates';
 import {
-  IconCalendar,
   IconClock,
-  IconStethoscope,
-  IconPlus,
-  IconEdit,
   IconTrash,
-  IconCopy,
-  IconSettings,
-  IconChevronLeft,
-  IconChevronRight,
-  IconCalendarEvent,
-  IconFilter,
-  IconPrinter,
-  IconDownload,
-  IconRefresh,
-  IconCheck,
-  IconAlertTriangle,
-  IconInfoCircle,
+  IconPlus,
   IconX,
-  IconDots,
-  IconClockHour4,
-  IconUserCheck,
-  IconUserX,
-  IconCalendarPlus,
-  IconTemplate,
-  IconRepeat,
-  IconZoomIn,
-  IconZoomOut,
-  IconEye,
-  IconEyeOff,
-  IconBulb,
-  IconHistory,
-  IconDeviceFloppy,
-  IconArrowBack,
-  IconMenu2,
-  IconGridDots,
-  IconList,
-  IconCalendarTime,
-  IconClipboard,
-  IconBrandGoogleFilled,
+  IconCheck,
+  IconCalendar,
+  IconUser,
+  IconAlertCircle,
+  IconRefresh,
 } from '@tabler/icons-react';
-import { DatePicker, TimeInput } from '@mantine/dates';
-import { notifications } from '@mantine/notifications';
-import { useDisclosure } from '@mantine/hooks';
+import axios from 'axios';
 
-// Types and Interfaces
-interface TimeSlot {
+interface DayAvailability {
   id: string;
-  date: Date;
-  startTime: string;
-  endTime: string;
-  duration: number; // in minutes
-  status: 'available' | 'booked' | 'blocked' | 'tentative' | 'break';
-  appointmentType?: string;
-  patientName?: string;
-  notes?: string;
-  isRecurring?: boolean;
-  recurringPattern?: 'weekly' | 'biweekly' | 'monthly';
+  day: string;
+  fromTime: string;
+  tillTime: string;
 }
 
-interface AvailabilityTemplate {
+interface BlockDay {
   id: string;
-  name: string;
-  description: string;
-  timeSlots: Omit<TimeSlot, 'id' | 'date'>[];
-  isDefault: boolean;
+  date: Date | null;
+  fromTime: string;
+  tillTime: string;
 }
 
-interface ProviderStats {
-  totalSlots: number;
-  availableSlots: number;
-  bookedSlots: number;
-  utilizationRate: number;
-  averageBookingTime: number;
+interface AvailabilityData {
+  provider_id: string;
+  start_date: string;
+  end_date: string;
+  availability: {
+    [day: string]: {
+      from_time: string;
+      till_time: string;
+      is_available: boolean;
+    };
+  };
+  block_days?: {
+    date: string;
+    from_time: string;
+    till_time: string;
+    reason?: string;
+  }[];
 }
-
-type CalendarView = 'month' | 'week' | 'day';
-
-const APPOINTMENT_TYPES = [
-  'General Consultation',
-  'Follow-up',
-  'Emergency',
-  'Routine Checkup',
-  'Specialist Consultation',
-  'Procedure',
-  'Telemedicine',
-];
-
-const DURATION_OPTIONS = [
-  { value: '15', label: '15 minutes' },
-  { value: '30', label: '30 minutes' },
-  { value: '45', label: '45 minutes' },
-  { value: '60', label: '1 hour' },
-  { value: '90', label: '1.5 hours' },
-  { value: '120', label: '2 hours' },
-];
-
-const STATUS_COLORS = {
-  available: '#10b981',
-  booked: '#3b82f6',
-  blocked: '#ef4444',
-  tentative: '#f59e0b',
-  break: '#6b7280',
-};
 
 interface ProviderAvailabilityProps {
-  providerId?: string;
   onClose?: () => void;
+  onSave?: (data: any) => void;
+  providerId?: string;
 }
 
+const DAYS_OF_WEEK = [
+  'Monday',
+  'Tuesday', 
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday'
+];
+
+const TIME_ZONES = [
+  'UTC-8 (PST)',
+  'UTC-7 (MST)',
+  'UTC-6 (CST)',
+  'UTC-5 (EST)',
+  'UTC+0 (GMT)',
+  'UTC+1 (CET)',
+  'UTC+2 (EET)',
+  'UTC+5:30 (IST)',
+  'UTC+8 (CST)',
+  'UTC+9 (JST)',
+];
+
+const PROVIDERS = [
+  'John Doe',
+  'Jane Smith',
+  'Dr. Michael Johnson',
+  'Dr. Sarah Wilson',
+  'Dr. Robert Brown',
+];
+
 const ProviderAvailability: React.FC<ProviderAvailabilityProps> = ({ 
-  providerId = 'provider-1', 
-  onClose 
+  onClose, 
+  onSave,
+  providerId = 'f1365ad6-9115-4a91-bbfe-3764273dcfa0'
 }) => {
-  // State Management
-  const [currentView, setCurrentView] = useState<CalendarView>('week');
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
-  const [templates, setTemplates] = useState<AvailabilityTemplate[]>([]);
-  const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
+  const [selectedProvider, setSelectedProvider] = useState('John Doe');
+  const [selectedTimeZone, setSelectedTimeZone] = useState('UTC-5 (EST)');
+  const [dayAvailabilities, setDayAvailabilities] = useState<DayAvailability[]>([
+    { id: '1', day: 'Monday', fromTime: '09:00', tillTime: '18:00' },
+    { id: '2', day: 'Tuesday', fromTime: '09:00', tillTime: '18:00' },
+    { id: '3', day: 'Wednesday', fromTime: '09:00', tillTime: '18:00' },
+    { id: '4', day: 'Thursday', fromTime: '09:00', tillTime: '18:00' },
+    { id: '5', day: 'Friday', fromTime: '09:00', tillTime: '18:00' },
+    { id: '6', day: 'Saturday', fromTime: '09:00', tillTime: '18:00' },
+  ]);
+  const [blockDays, setBlockDays] = useState<BlockDay[]>([
+    { id: '1', date: null, fromTime: '09:00', tillTime: '18:00' },
+  ]);
+
+  // API States
+  const [availabilityData, setAvailabilityData] = useState<AvailabilityData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [stats, setStats] = useState<ProviderStats>({
-    totalSlots: 0,
-    availableSlots: 0,
-    bookedSlots: 0,
-    utilizationRate: 0,
-    averageBookingTime: 0,
-  });
+  const [error, setError] = useState<string | null>(null);
 
-  // Modal and Form States
-  const [addModalOpened, { open: openAddModal, close: closeAddModal }] = useDisclosure(false);
-  const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
-  const [templateModalOpened, { open: openTemplateModal, close: closeTemplateModal }] = useDisclosure(false);
-  const [settingsOpened, { open: openSettings, close: closeSettings }] = useDisclosure(false);
-  const [sidebarOpened, { toggle: toggleSidebar }] = useDisclosure(true);
-
-  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
-  const [bulkEditMode, setBulkEditMode] = useState(false);
-  const [showConflicts, setShowConflicts] = useState(true);
-  const [autoSave, setAutoSave] = useState(true);
-
-  // Form States
-  const [formData, setFormData] = useState({
-    date: new Date(),
-    startTime: '09:00',
-    endTime: '17:00',
-    duration: 30,
-    appointmentType: 'General Consultation',
-    notes: '',
-    isRecurring: false,
-    recurringPattern: 'weekly' as 'weekly' | 'biweekly' | 'monthly',
-    breakDuration: 15,
-  });
-
-  // Mock Data Generation
-  const generateMockData = useCallback(() => {
-    const mockSlots: TimeSlot[] = [];
-    const today = new Date();
-    
-    for (let i = 0; i < 14; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      
-      // Skip weekends for this example
-      if (date.getDay() === 0 || date.getDay() === 6) continue;
-      
-      const slots = [
-        {
-          id: `slot-${i}-1`,
-          date,
-          startTime: '09:00',
-          endTime: '09:30',
-          duration: 30,
-          status: Math.random() > 0.7 ? 'booked' : 'available',
-          appointmentType: 'General Consultation',
-          patientName: Math.random() > 0.7 ? 'John Doe' : undefined,
-        },
-        {
-          id: `slot-${i}-2`,
-          date,
-          startTime: '10:00',
-          endTime: '10:30',
-          duration: 30,
-          status: Math.random() > 0.6 ? 'booked' : 'available',
-          appointmentType: 'Follow-up',
-          patientName: Math.random() > 0.6 ? 'Jane Smith' : undefined,
-        },
-        {
-          id: `slot-${i}-3`,
-          date,
-          startTime: '11:00',
-          endTime: '11:30',
-          duration: 30,
-          status: Math.random() > 0.8 ? 'tentative' : 'available',
-          appointmentType: 'Routine Checkup',
-        },
-        {
-          id: `slot-${i}-4`,
-          date,
-          startTime: '14:00',
-          endTime: '14:30',
-          duration: 30,
-          status: 'break',
-          notes: 'Lunch break',
-        },
-        {
-          id: `slot-${i}-5`,
-          date,
-          startTime: '15:00',
-          endTime: '15:30',
-          duration: 30,
-          status: Math.random() > 0.5 ? 'booked' : 'available',
-          appointmentType: 'Specialist Consultation',
-          patientName: Math.random() > 0.5 ? 'Mike Johnson' : undefined,
-        },
-      ] as TimeSlot[];
-      
-      mockSlots.push(...slots);
-    }
-    
-    setTimeSlots(mockSlots);
-    
-    // Calculate stats
-    const total = mockSlots.length;
-    const available = mockSlots.filter(slot => slot.status === 'available').length;
-    const booked = mockSlots.filter(slot => slot.status === 'booked').length;
-    
-    setStats({
-      totalSlots: total,
-      availableSlots: available,
-      bookedSlots: booked,
-      utilizationRate: Math.round((booked / total) * 100),
-      averageBookingTime: 32,
-    });
-  }, []);
-
-  // Mock Templates
-  const generateMockTemplates = useCallback(() => {
-    const mockTemplates: AvailabilityTemplate[] = [
-      {
-        id: 'template-1',
-        name: 'Standard Weekday',
-        description: 'Regular 9-5 schedule with lunch break',
-        isDefault: true,
-        timeSlots: [
-          { startTime: '09:00', endTime: '12:00', duration: 30, status: 'available', appointmentType: 'General Consultation' },
-          { startTime: '12:00', endTime: '13:00', duration: 60, status: 'break', notes: 'Lunch break' },
-          { startTime: '13:00', endTime: '17:00', duration: 30, status: 'available', appointmentType: 'General Consultation' },
-        ],
-      },
-      {
-        id: 'template-2',
-        name: 'Half Day Morning',
-        description: 'Morning appointments only',
-        isDefault: false,
-        timeSlots: [
-          { startTime: '08:00', endTime: '12:00', duration: 30, status: 'available', appointmentType: 'General Consultation' },
-        ],
-      },
-      {
-        id: 'template-3',
-        name: 'Extended Hours',
-        description: 'Early morning and evening availability',
-        isDefault: false,
-        timeSlots: [
-          { startTime: '07:00', endTime: '09:00', duration: 30, status: 'available', appointmentType: 'Early Consultation' },
-          { startTime: '09:00', endTime: '17:00', duration: 30, status: 'available', appointmentType: 'General Consultation' },
-          { startTime: '17:00', endTime: '19:00', duration: 30, status: 'available', appointmentType: 'Evening Consultation' },
-        ],
-      },
-    ];
-    
-    setTemplates(mockTemplates);
-  }, []);
-
+  // Fetch availability data on component mount
   useEffect(() => {
-    generateMockData();
-    generateMockTemplates();
-  }, [generateMockData, generateMockTemplates]);
+    fetchAvailabilityData();
+  }, [providerId]);
 
-  // Helper Functions
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
+  const fetchAvailabilityData = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const startDate = '2025-08-10';
+      const endDate = '2025-08-11';
+      
+      const response = await axios.get(
+        `http://192.168.0.252:5000/api/v1/provider/${providerId}/availability`,
+        {
+          params: {
+            start_date: startDate,
+            end_date: endDate,
+          },
+          headers: {
+            'Content-Type': 'application/json',
+            'accept': 'application/json',
+          },
+          timeout: 10000,
+        }
+      );
+
+      console.log('Availability API response:', response.data);
+      setAvailabilityData(response.data);
+
+      // Update day availabilities with fetched data
+      if (response.data.availability) {
+        const updatedDayAvailabilities = dayAvailabilities.map((day, index) => {
+          const dayKey = day.day.toLowerCase();
+          const apiDayData = response.data.availability[dayKey];
+          
+          if (apiDayData) {
+            return {
+              ...day,
+              fromTime: apiDayData.from_time || day.fromTime,
+              tillTime: apiDayData.till_time || day.tillTime,
+            };
+          }
+          return day;
+        });
+        
+        setDayAvailabilities(updatedDayAvailabilities);
+      }
+
+      // Update block days with fetched data
+      if (response.data.block_days && response.data.block_days.length > 0) {
+        const updatedBlockDays = response.data.block_days.map((blockDay: any, index: number) => ({
+          id: (index + 1).toString(),
+          date: blockDay.date ? new Date(blockDay.date) : null,
+          fromTime: blockDay.from_time || '09:00',
+          tillTime: blockDay.till_time || '18:00',
+        }));
+        
+        setBlockDays(updatedBlockDays);
+      }
+
+    } catch (error: any) {
+      console.error('Error fetching availability data:', error);
+      
+      let errorMessage = 'Failed to fetch availability data. Please try again.';
+      
+      if (error.response) {
+        if (error.response.status === 404) {
+          errorMessage = 'Provider availability not found.';
+        } else if (error.response.status === 500) {
+          errorMessage = 'Server error. Please try again later.';
+        } else if (error.response.data?.detail) {
+          errorMessage = error.response.data.detail;
+        }
+      } else if (error.code === 'ECONNREFUSED' || error.code === 'NETWORK_ERROR') {
+        errorMessage = 'Unable to connect to server. Please check your connection.';
+      }
+      
+      setError(errorMessage);
+      
+      // Use dummy data for testing when API is not available
+      if (error.code === 'ECONNREFUSED' || error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
+        console.log('API not available, using dummy data');
+        const dummyData: AvailabilityData = {
+          provider_id: providerId,
+          start_date: '2025-08-10',
+          end_date: '2025-08-11',
+          availability: {
+            monday: { from_time: '09:00', till_time: '17:00', is_available: true },
+            tuesday: { from_time: '09:00', till_time: '17:00', is_available: true },
+            wednesday: { from_time: '09:00', till_time: '17:00', is_available: true },
+            thursday: { from_time: '09:00', till_time: '17:00', is_available: true },
+            friday: { from_time: '09:00', till_time: '17:00', is_available: true },
+            saturday: { from_time: '09:00', till_time: '15:00', is_available: true },
+            sunday: { from_time: '10:00', till_time: '14:00', is_available: false },
+          },
+          block_days: [
+            {
+              date: '2025-08-15',
+              from_time: '09:00',
+              till_time: '18:00',
+              reason: 'Holiday'
+            }
+          ]
+        };
+        
+        setAvailabilityData(dummyData);
+        setError(null);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
+  const handleAddBlockDay = () => {
+    const newBlockDay: BlockDay = {
+      id: Date.now().toString(),
+      date: null,
+      fromTime: '09:00',
+      tillTime: '18:00',
+    };
+    setBlockDays([...blockDays, newBlockDay]);
   };
 
-  const getStatusBadge = (status: TimeSlot['status']) => {
-    const colors = {
-      available: 'green',
-      booked: 'blue',
-      blocked: 'red',
-      tentative: 'yellow',
-      break: 'gray',
-    };
+  const handleRemoveBlockDay = (id: string) => {
+    setBlockDays(blockDays.filter(day => day.id !== id));
+  };
 
-    const labels = {
-      available: 'Available',
-      booked: 'Booked',
-      blocked: 'Blocked',
-      tentative: 'Tentative',
-      break: 'Break',
-    };
-
-    return (
-      <Badge color={colors[status]} variant="light" size="sm">
-        {labels[status]}
-      </Badge>
+  const handleUpdateDayAvailability = (id: string, field: keyof DayAvailability, value: string) => {
+    setDayAvailabilities(prev => 
+      prev.map(day => 
+        day.id === id ? { ...day, [field]: value } : day
+      )
     );
   };
 
-  const handleAddSlot = () => {
-    const newSlot: TimeSlot = {
-      id: `slot-${Date.now()}`,
-      date: formData.date,
-      startTime: formData.startTime,
-      endTime: formData.endTime,
-      duration: formData.duration,
-      status: 'available',
-      appointmentType: formData.appointmentType,
-      notes: formData.notes,
-      isRecurring: formData.isRecurring,
-      recurringPattern: formData.recurringPattern,
+  const handleUpdateBlockDay = (id: string, field: keyof BlockDay, value: string | Date | null) => {
+    setBlockDays(prev => 
+      prev.map(day => 
+        day.id === id ? { ...day, [field]: value } : day
+      )
+    );
+  };
+
+  const handleSave = () => {
+    const data = {
+      provider: selectedProvider,
+      timeZone: selectedTimeZone,
+      dayAvailabilities,
+      blockDays,
+      availabilityData,
     };
-
-    setTimeSlots(prev => [...prev, newSlot]);
-    closeAddModal();
-    
-    notifications.show({
-      title: 'Availability Added',
-      message: 'New time slot has been added successfully',
-      color: 'green',
-      icon: <IconCheck size={16} />,
-    });
+    console.log('Saving provider availability:', data);
+    onSave?.(data);
   };
 
-  const handleEditSlot = () => {
-    if (!selectedSlot) return;
-
-    setTimeSlots(prev => prev.map(slot => 
-      slot.id === selectedSlot.id 
-        ? { ...slot, ...formData }
-        : slot
-    ));
-    
-    closeEditModal();
-    setSelectedSlot(null);
-    
-    notifications.show({
-      title: 'Availability Updated',
-      message: 'Time slot has been updated successfully',
-      color: 'blue',
-      icon: <IconCheck size={16} />,
-    });
+  const handleRefresh = () => {
+    fetchAvailabilityData();
   };
-
-  const handleDeleteSlot = (slotId: string) => {
-    setTimeSlots(prev => prev.filter(slot => slot.id !== slotId));
-    
-    notifications.show({
-      title: 'Availability Removed',
-      message: 'Time slot has been removed successfully',
-      color: 'red',
-      icon: <IconTrash size={16} />,
-    });
-  };
-
-  const handleBulkAction = (action: 'delete' | 'block' | 'unblock') => {
-    if (selectedSlots.length === 0) return;
-
-    switch (action) {
-      case 'delete':
-        setTimeSlots(prev => prev.filter(slot => !selectedSlots.includes(slot.id)));
-        notifications.show({
-          title: 'Bulk Delete Complete',
-          message: `${selectedSlots.length} slots removed`,
-          color: 'red',
-        });
-        break;
-      case 'block':
-        setTimeSlots(prev => prev.map(slot => 
-          selectedSlots.includes(slot.id) 
-            ? { ...slot, status: 'blocked' as const }
-            : slot
-        ));
-        notifications.show({
-          title: 'Slots Blocked',
-          message: `${selectedSlots.length} slots blocked`,
-          color: 'orange',
-        });
-        break;
-      case 'unblock':
-        setTimeSlots(prev => prev.map(slot => 
-          selectedSlots.includes(slot.id) 
-            ? { ...slot, status: 'available' as const }
-            : slot
-        ));
-        notifications.show({
-          title: 'Slots Unblocked',
-          message: `${selectedSlots.length} slots made available`,
-          color: 'green',
-        });
-        break;
-    }
-
-    setSelectedSlots([]);
-    setBulkEditMode(false);
-  };
-
-  const applyTemplate = (template: AvailabilityTemplate) => {
-    const newSlots: TimeSlot[] = template.timeSlots.map((templateSlot, index) => ({
-      id: `template-${template.id}-${Date.now()}-${index}`,
-      date: formData.date,
-      ...templateSlot,
-    }));
-
-    setTimeSlots(prev => [...prev, ...newSlots]);
-    closeTemplateModal();
-    
-    notifications.show({
-      title: 'Template Applied',
-      message: `${template.name} template applied successfully`,
-      color: 'green',
-      icon: <IconTemplate size={16} />,
-    });
-  };
-
-  // Calendar Navigation
-  const navigateDate = (direction: 'prev' | 'next' | 'today') => {
-    const newDate = new Date(selectedDate);
-    
-    switch (direction) {
-      case 'prev':
-        if (currentView === 'month') {
-          newDate.setMonth(newDate.getMonth() - 1);
-        } else if (currentView === 'week') {
-          newDate.setDate(newDate.getDate() - 7);
-        } else {
-          newDate.setDate(newDate.getDate() - 1);
-        }
-        break;
-      case 'next':
-        if (currentView === 'month') {
-          newDate.setMonth(newDate.getMonth() + 1);
-        } else if (currentView === 'week') {
-          newDate.setDate(newDate.getDate() + 7);
-        } else {
-          newDate.setDate(newDate.getDate() + 1);
-        }
-        break;
-      case 'today':
-        setSelectedDate(new Date());
-        return;
-    }
-    
-    setSelectedDate(newDate);
-  };
-
-  // Get slots for current view
-  const getViewSlots = () => {
-    const startOfWeek = new Date(selectedDate);
-    startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay());
-    
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-
-    return timeSlots.filter(slot => {
-      const slotDate = new Date(slot.date);
-      
-      if (currentView === 'day') {
-        return slotDate.toDateString() === selectedDate.toDateString();
-      } else if (currentView === 'week') {
-        return slotDate >= startOfWeek && slotDate <= endOfWeek;
-      } else {
-        return slotDate.getMonth() === selectedDate.getMonth() && 
-               slotDate.getFullYear() === selectedDate.getFullYear();
-      }
-    });
-  };
-
-  const viewSlots = getViewSlots();
 
   return (
-    <Box px={20} py={20} style={{ width: '100%' }}>
+    <Container size="xl" py={40}>
+      <Paper
+        shadow="xl"
+        p={40}
+        radius="lg"
+        style={{
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.3)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        }}
+      >
       {/* Header */}
-      <Paper shadow="sm" p="md" radius="lg" mb="lg">
-        <Group justify="space-between">
-          <Group>
-            <ActionIcon
-              variant="subtle"
-              size="lg"
-              onClick={toggleSidebar}
-              color="blue"
-            >
-              <IconMenu2 size={20} />
-            </ActionIcon>
-            <Box>
-              <Title order={2} c="dark.8">
-                <Group gap="xs">
-                  <IconCalendarTime size={28} color="#3b82f6" />
-                  Provider Availability Management
-                </Group>
+        <Stack align="center" mb={40}>
+          <Box
+            style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              borderRadius: '50%',
+              padding: 20,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 10px 30px rgba(102, 126, 234, 0.4)',
+            }}
+          >
+            <IconCalendar size={32} color="white" />
+          </Box>
+          <Title order={1} size="h2" fw={700} style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
+            Provider Availability
               </Title>
-              <Text size="sm" c="dimmed">
-                Dr. Sarah Johnson • Cardiologist • {formatDate(selectedDate)}
+          <Text size="sm" c="dimmed" ta="center">
+            Manage provider schedules and block days
               </Text>
-            </Box>
-          </Group>
-          
-          <Group>
-            <Button
-              leftSection={<IconPlus size={16} />}
-              onClick={openAddModal}
-              gradient={{ from: 'blue.5', to: 'blue.7' }}
-            >
-              Add Availability
-            </Button>
-            <Button
-              variant="light"
-              leftSection={<IconTemplate size={16} />}
-              onClick={openTemplateModal}
-            >
-              Templates
-            </Button>
-            <ActionIcon
-              variant="light"
-              size="lg"
-              onClick={openSettings}
-              color="gray"
-            >
-              <IconSettings size={18} />
-            </ActionIcon>
-          </Group>
-        </Group>
-      </Paper>
-
-        <Grid>
-          {/* Sidebar */}
-          <Grid.Col span={{ base: 12, md: sidebarOpened ? 3 : 0 }}>
-            {sidebarOpened && (
-              <Stack gap="md">
-                {/* Calendar Navigation */}
-                <Card shadow="sm" padding="lg" radius="lg">
-                  <Stack gap="md">
-                    <Group justify="space-between">
-                      <Text fw={600} size="sm">Calendar Navigation</Text>
-                      <Group gap="xs">
-                        <ActionIcon
-                          variant="subtle"
-                          size="sm"
-                          onClick={() => navigateDate('prev')}
-                        >
-                          <IconChevronLeft size={14} />
-                        </ActionIcon>
-                        <ActionIcon
-                          variant="subtle"
-                          size="sm"
-                          onClick={() => navigateDate('today')}
-                        >
-                          <IconCalendarEvent size={14} />
-                        </ActionIcon>
-                        <ActionIcon
-                          variant="subtle"
-                          size="sm"
-                          onClick={() => navigateDate('next')}
-                        >
-                          <IconChevronRight size={14} />
-                        </ActionIcon>
-                      </Group>
-                    </Group>
-                    
-                    <TextInput
-                      type="date"
-                      value={selectedDate.toISOString().split('T')[0]}
-                      onChange={(event) => {
-                        const newDate = new Date(event.currentTarget.value);
-                        if (!isNaN(newDate.getTime())) {
-                          setSelectedDate(newDate);
-                        }
-                      }}
-                      size="sm"
-                    />
-                    
-                    <Group justify="center">
-                      <Button.Group>
-                        <Button
-                          variant={currentView === 'day' ? 'filled' : 'light'}
-                          size="xs"
-                          onClick={() => setCurrentView('day')}
-                        >
-                          Day
-                        </Button>
-                        <Button
-                          variant={currentView === 'week' ? 'filled' : 'light'}
-                          size="xs"
-                          onClick={() => setCurrentView('week')}
-                        >
-                          Week
-                        </Button>
-                        <Button
-                          variant={currentView === 'month' ? 'filled' : 'light'}
-                          size="xs"
-                          onClick={() => setCurrentView('month')}
-                        >
-                          Month
-                        </Button>
-                      </Button.Group>
-                    </Group>
                   </Stack>
-                </Card>
 
-                {/* Statistics */}
-                <Card shadow="sm" padding="lg" radius="lg">
-                  <Stack gap="md">
-                    <Text fw={600} size="sm">Availability Statistics</Text>
-                    
-                    <Center>
-                      <RingProgress
-                        size={120}
-                        thickness={8}
-                        sections={[
-                          { value: (stats.bookedSlots / stats.totalSlots) * 100, color: 'blue' },
-                          { value: (stats.availableSlots / stats.totalSlots) * 100, color: 'green' },
-                        ]}
-                        label={
-                          <Center>
-                            <div style={{ textAlign: 'center' }}>
-                              <Text size="xs" c="dimmed">Utilization</Text>
-                              <Text fw={700} size="lg">{stats.utilizationRate}%</Text>
-                            </div>
+        {/* Loading State */}
+        {isLoading && (
+          <Center py={40}>
+            <Stack align="center" gap="md">
+              <Loader size="lg" color="blue" />
+              <Text size="sm" c="dimmed">Loading availability data...</Text>
+            </Stack>
                           </Center>
-                        }
-                      />
-                    </Center>
-                    
-                    <SimpleGrid cols={2} spacing="xs">
-                      <Box ta="center">
-                        <Text size="lg" fw={700} c="green">{stats.availableSlots}</Text>
-                        <Text size="xs" c="dimmed">Available</Text>
-                      </Box>
-                      <Box ta="center">
-                        <Text size="lg" fw={700} c="blue">{stats.bookedSlots}</Text>
-                        <Text size="xs" c="dimmed">Booked</Text>
-                      </Box>
-                    </SimpleGrid>
-                  </Stack>
-                </Card>
+        )}
 
-                {/* Legend */}
-                <Card shadow="sm" padding="lg" radius="lg">
-                  <Stack gap="md">
-                    <Text fw={600} size="sm">Status Legend</Text>
-                    
-                    <Stack gap="xs">
-                      {Object.entries(STATUS_COLORS).map(([status, color]) => (
-                        <Group key={status} gap="xs">
-                          <Box
-                            w={12}
-                            h={12}
+        {/* Error State */}
+        {error && (
+          <Alert
+            icon={<IconAlertCircle size={20} />}
+            title="Error Loading Data"
+            color="red"
+            mb="xl"
+            radius="lg"
                             style={{
-                              backgroundColor: color,
-                              borderRadius: 2,
-                            }}
-                          />
-                          <Text size="xs" tt="capitalize">{status}</Text>
-                        </Group>
-                      ))}
-                    </Stack>
-                  </Stack>
-                </Card>
-
-                {/* Quick Actions */}
-                <Card shadow="sm" padding="lg" radius="lg">
-                  <Stack gap="md">
-                    <Text fw={600} size="sm">Quick Actions</Text>
-                    
-                    <Stack gap="xs">
+              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%)',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              boxShadow: '0 4px 15px rgba(239, 68, 68, 0.1)'
+            }}
+          >
+            <Text size="sm" mb="sm" style={{ lineHeight: 1.5 }}>
+              {error}
+            </Text>
                       <Button
+              size="sm"
                         variant="light"
-                        size="xs"
-                        leftSection={<IconRefresh size={14} />}
-                        onClick={generateMockData}
-                        fullWidth
-                      >
-                        Refresh Data
+              color="red"
+              leftSection={<IconRefresh size={16} />}
+              onClick={handleRefresh}
+            >
+              Retry
                       </Button>
-                      <Button
-                        variant="light"
-                        size="xs"
-                        leftSection={<IconPrinter size={14} />}
-                        fullWidth
-                      >
-                        Print Schedule
-                      </Button>
-                      <Button
-                        variant="light"
-                        size="xs"
-                        leftSection={<IconDownload size={14} />}
-                        fullWidth
-                      >
-                        Export Data
-                      </Button>
-                    </Stack>
-                  </Stack>
-                </Card>
-              </Stack>
-            )}
-          </Grid.Col>
+          </Alert>
+        )}
 
           {/* Main Content */}
-          <Grid.Col span={{ base: 12, md: sidebarOpened ? 9 : 12 }}>
-            <Stack gap="md">
-              {/* View Controls */}
-              <Paper shadow="sm" p="md" radius="lg">
-                <Group justify="space-between">
-                  <Group>
-                    <Text fw={600}>
-                      {currentView === 'day' && `Day View - ${formatDate(selectedDate)}`}
-                      {currentView === 'week' && `Week View - Week of ${formatDate(selectedDate)}`}
-                      {currentView === 'month' && `Month View - ${selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`}
+        {!isLoading && (
+          <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="xl">
+            {/* Left Section - Day Wise Availability */}
+            <Box>
+              <Group justify="space-between" mb="md">
+                <Title order={3} size="h4" fw={600} c="dark.7">
+                  Day Wise Availability
+                </Title>
+                {availabilityData && (
+                  <Text size="xs" c="dimmed">
+                    Last updated: {new Date().toLocaleString()}
                     </Text>
-                    <Badge variant="light" color="blue">
-                      {viewSlots.length} slots
-                    </Badge>
+                )}
                   </Group>
                   
-                  <Group>
-                    {bulkEditMode && (
-                      <Group gap="xs">
-                        <Badge variant="light" color="orange">
-                          {selectedSlots.length} selected
-                        </Badge>
-                        <Button
-                          size="xs"
-                          variant="light"
-                          color="red"
-                          onClick={() => handleBulkAction('delete')}
-                          disabled={selectedSlots.length === 0}
-                        >
-                          Delete
-                        </Button>
-                        <Button
-                          size="xs"
-                          variant="light"
-                          color="orange"
-                          onClick={() => handleBulkAction('block')}
-                          disabled={selectedSlots.length === 0}
-                        >
-                          Block
-                        </Button>
-                        <Button
-                          size="xs"
-                          variant="light"
-                          color="green"
-                          onClick={() => handleBulkAction('unblock')}
-                          disabled={selectedSlots.length === 0}
-                        >
-                          Unblock
-                        </Button>
-                      </Group>
-                    )}
-                    
-                    <Switch
-                      label="Bulk Edit"
-                      checked={bulkEditMode}
-                      onChange={(event) => {
-                        setBulkEditMode(event.currentTarget.checked);
-                        setSelectedSlots([]);
-                      }}
-                      size="sm"
-                    />
-                    
-                    <Menu shadow="md" width={200}>
-                      <Menu.Target>
-                        <ActionIcon variant="light" color="gray">
-                          <IconDots size={16} />
-                        </ActionIcon>
-                      </Menu.Target>
-                      <Menu.Dropdown>
-                        <Menu.Item leftSection={<IconFilter size={14} />}>
-                          Filter Slots
-                        </Menu.Item>
-                        <Menu.Item leftSection={<IconEye size={14} />}>
-                          Show Conflicts
-                        </Menu.Item>
-                        <Menu.Item leftSection={<IconZoomIn size={14} />}>
-                          Zoom In
-                        </Menu.Item>
-                        <Menu.Item leftSection={<IconZoomOut size={14} />}>
-                          Zoom Out
-                        </Menu.Item>
-                      </Menu.Dropdown>
-                    </Menu>
-                  </Group>
-                </Group>
-              </Paper>
-
-              {/* Calendar Content */}
-              <Paper shadow="sm" p="lg" radius="lg" style={{ minHeight: 600 }}>
-                {isLoading ? (
-                  <Center h={400}>
-                    <Stack align="center" gap="md">
-                      <Loader size="lg" />
-                      <Text size="sm" c="dimmed">Loading availability data...</Text>
-                    </Stack>
-                  </Center>
-                ) : (
-                  <ScrollArea h={500}>
-                    {currentView === 'day' && (
-                      <Stack gap="xs">
-                        {viewSlots.length === 0 ? (
-                          <Center h={300}>
-                            <Stack align="center" gap="md">
-                              <IconCalendar size={48} color="#cbd5e1" />
-                              <Text size="sm" c="dimmed">No availability set for this day</Text>
-                              <Button
-                                variant="light"
-                                leftSection={<IconPlus size={16} />}
-                                onClick={openAddModal}
-                              >
-                                Add Availability
-                              </Button>
-                            </Stack>
-                          </Center>
-                        ) : (
-                          viewSlots
-                            .sort((a, b) => a.startTime.localeCompare(b.startTime))
-                            .map((slot) => (
-                              <Card
-                                key={slot.id}
-                                shadow="xs"
-                                padding="md"
-                                radius="md"
-                                withBorder
-                                style={{
-                                  borderLeft: `4px solid ${STATUS_COLORS[slot.status]}`,
-                                  cursor: bulkEditMode ? 'pointer' : 'default',
-                                  backgroundColor: selectedSlots.includes(slot.id) ? '#f1f5f9' : undefined,
-                                }}
-                                onClick={() => {
-                                  if (bulkEditMode) {
-                                    setSelectedSlots(prev => 
-                                      prev.includes(slot.id)
-                                        ? prev.filter(id => id !== slot.id)
-                                        : [...prev, slot.id]
-                                    );
-                                  }
-                                }}
-                              >
-                                <Group justify="space-between">
-                                  <Group>
-                                    {bulkEditMode && (
-                                      <Checkbox
-                                        checked={selectedSlots.includes(slot.id)}
-                                        onChange={() => {}}
-                                        size="sm"
-                                      />
-                                    )}
-                                    <Box>
-                                      <Group gap="xs" mb="xs">
-                                        <Text fw={600} size="sm">
-                                          {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
-                                        </Text>
-                                        {getStatusBadge(slot.status)}
-                                        <Badge variant="outline" size="xs">
-                                          {slot.duration}min
-                                        </Badge>
-                                      </Group>
-                                      <Text size="xs" c="dimmed">
-                                        {slot.appointmentType}
-                                        {slot.patientName && ` • ${slot.patientName}`}
-                                        {slot.notes && ` • ${slot.notes}`}
-                                      </Text>
-                                    </Box>
-                                  </Group>
-                                  
-                                  {!bulkEditMode && (
-                                    <Menu shadow="md" width={150}>
-                                      <Menu.Target>
-                                        <ActionIcon variant="subtle" size="sm">
-                                          <IconDots size={14} />
-                                        </ActionIcon>
-                                      </Menu.Target>
-                                      <Menu.Dropdown>
-                                        <Menu.Item
-                                          leftSection={<IconEdit size={14} />}
-                                          onClick={() => {
-                                            setSelectedSlot(slot);
-                                            setFormData({
-                                              date: slot.date,
-                                              startTime: slot.startTime,
-                                              endTime: slot.endTime,
-                                              duration: slot.duration,
-                                              appointmentType: slot.appointmentType || 'General Consultation',
-                                              notes: slot.notes || '',
-                                              isRecurring: slot.isRecurring || false,
-                                              recurringPattern: slot.recurringPattern || 'weekly',
-                                              breakDuration: 15,
-                                            });
-                                            openEditModal();
-                                          }}
-                                        >
-                                          Edit
-                                        </Menu.Item>
-                                        <Menu.Item
-                                          leftSection={<IconCopy size={14} />}
-                                          onClick={() => {
-                                            const newSlot = {
-                                              ...slot,
-                                              id: `copy-${Date.now()}`,
-                                            };
-                                            setTimeSlots(prev => [...prev, newSlot]);
-                                            notifications.show({
-                                              title: 'Slot Copied',
-                                              message: 'Time slot has been duplicated',
-                                              color: 'blue',
-                                            });
-                                          }}
-                                        >
-                                          Duplicate
-                                        </Menu.Item>
-                                        <Menu.Divider />
-                                        <Menu.Item
-                                          leftSection={<IconTrash size={14} />}
-                                          color="red"
-                                          onClick={() => handleDeleteSlot(slot.id)}
-                                        >
-                                          Delete
-                                        </Menu.Item>
-                                      </Menu.Dropdown>
-                                    </Menu>
-                                  )}
-                                </Group>
-                              </Card>
-                            ))
-                        )}
-                      </Stack>
-                    )}
-
-                    {currentView === 'week' && (
-                      <SimpleGrid cols={7} spacing="xs">
-                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, dayIndex) => {
-                          const dayDate = new Date(selectedDate);
-                          dayDate.setDate(selectedDate.getDate() - selectedDate.getDay() + dayIndex);
-                          const daySlots = viewSlots.filter(slot => 
-                            new Date(slot.date).toDateString() === dayDate.toDateString()
-                          );
-
-                          return (
-                            <Card key={day} shadow="xs" padding="sm" radius="md" withBorder>
-                              <Stack gap="xs">
-                                <Text fw={600} size="sm" ta="center">
-                                  {day}
-                                </Text>
-                                <Text size="xs" c="dimmed" ta="center">
-                                  {dayDate.getDate()}
-                                </Text>
-                                <Divider />
-                                <Stack gap={4}>
-                                  {daySlots.length === 0 ? (
-                                    <Text size="xs" c="dimmed" ta="center">
-                                      No slots
-                                    </Text>
-                                  ) : (
-                                    daySlots
-                                      .sort((a, b) => a.startTime.localeCompare(b.startTime))
-                                      .slice(0, 4)
-                                      .map((slot) => (
-                                        <Box
-                                          key={slot.id}
-                                          p={4}
-                                          style={{
-                                            backgroundColor: STATUS_COLORS[slot.status],
-                                            borderRadius: 4,
-                                            cursor: 'pointer',
-                                          }}
-                                          onClick={() => {
-                                            setSelectedSlot(slot);
-                                            setFormData({
-                                              date: slot.date,
-                                              startTime: slot.startTime,
-                                              endTime: slot.endTime,
-                                              duration: slot.duration,
-                                              appointmentType: slot.appointmentType || 'General Consultation',
-                                              notes: slot.notes || '',
-                                              isRecurring: slot.isRecurring || false,
-                                              recurringPattern: slot.recurringPattern || 'weekly',
-                                              breakDuration: 15,
-                                            });
-                                            openEditModal();
-                                          }}
-                                        >
-                                          <Text size="xs" c="white" fw={500}>
-                                            {formatTime(slot.startTime)}
-                                          </Text>
-                                          {slot.patientName && (
-                                            <Text size="xs" c="white" opacity={0.8}>
-                                              {slot.patientName}
-                                            </Text>
-                                          )}
-                                        </Box>
-                                      ))
-                                  )}
-                                  {daySlots.length > 4 && (
-                                    <Text size="xs" c="dimmed" ta="center">
-                                      +{daySlots.length - 4} more
-                                    </Text>
-                                  )}
-                                </Stack>
-                              </Stack>
-                            </Card>
-                          );
-                        })}
-                      </SimpleGrid>
-                    )}
-
-                    {currentView === 'month' && (
-                      <Box>
-                        <SimpleGrid cols={7} spacing="xs" mb="md">
-                          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                            <Text key={day} fw={600} size="sm" ta="center" c="dimmed">
-                              {day}
-                            </Text>
-                          ))}
-                        </SimpleGrid>
-                        
-                        <SimpleGrid cols={7} spacing="xs">
-                          {Array.from({ length: 42 }, (_, index) => {
-                            const firstDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-                            const startDate = new Date(firstDay);
-                            startDate.setDate(startDate.getDate() - firstDay.getDay() + index);
-                            
-                            const daySlots = viewSlots.filter(slot => 
-                              new Date(slot.date).toDateString() === startDate.toDateString()
-                            );
-                            
-                            const isCurrentMonth = startDate.getMonth() === selectedDate.getMonth();
-                            const isToday = startDate.toDateString() === new Date().toDateString();
-
-                            return (
-                              <Card
-                                key={index}
-                                shadow="xs"
-                                padding="xs"
-                                radius="md"
-                                withBorder
-                                style={{
-                                  minHeight: 80,
-                                  opacity: isCurrentMonth ? 1 : 0.3,
-                                  backgroundColor: isToday ? '#f0f9ff' : undefined,
-                                }}
-                              >
-                                <Stack gap={2}>
-                                  <Text
-                                    size="xs"
-                                    fw={isToday ? 600 : 400}
-                                    c={isToday ? 'blue' : 'dark'}
-                                  >
-                                    {startDate.getDate()}
-                                  </Text>
-                                  
-                                  {daySlots.slice(0, 2).map((slot) => (
-                                    <Box
-                                      key={slot.id}
-                                      style={{
-                                        width: '100%',
-                                        height: 4,
-                                        backgroundColor: STATUS_COLORS[slot.status],
-                                        borderRadius: 2,
-                                      }}
-                                    />
-                                  ))}
-                                  
-                                  {daySlots.length > 2 && (
-                                    <Text size="xs" c="dimmed">
-                                      +{daySlots.length - 2}
-                                    </Text>
-                                  )}
-                                </Stack>
-                              </Card>
-                            );
-                          })}
-                        </SimpleGrid>
-                      </Box>
-                    )}
-                  </ScrollArea>
-                )}
-              </Paper>
-            </Stack>
-          </Grid.Col>
-        </Grid>
-
-        {/* Add Availability Modal */}
-        <Modal
-          opened={addModalOpened}
-          onClose={closeAddModal}
-          title="Add Availability"
-          size="lg"
-          radius="lg"
-        >
-          <Stack gap="md">
-            <SimpleGrid cols={2} spacing="md">
-              <TextInput
-                type="date"
-                label="Date"
-                value={formData.date.toISOString().split('T')[0]}
-                onChange={(event) => {
-                  const newDate = new Date(event.currentTarget.value);
-                  if (!isNaN(newDate.getTime())) {
-                    setFormData(prev => ({ ...prev, date: newDate }));
-                  }
-                }}
-                required
-              />
-              <Select
-                label="Appointment Type"
-                data={APPOINTMENT_TYPES}
-                value={formData.appointmentType}
-                onChange={(value) => value && setFormData(prev => ({ ...prev, appointmentType: value }))}
-                required
-              />
-            </SimpleGrid>
-
-            <SimpleGrid cols={3} spacing="md">
-              <TimeInput
-                label="Start Time"
-                value={formData.startTime}
-                onChange={(event) => setFormData(prev => ({ ...prev, startTime: event.currentTarget.value }))}
-                required
-              />
-              <TimeInput
-                label="End Time"
-                value={formData.endTime}
-                onChange={(event) => setFormData(prev => ({ ...prev, endTime: event.currentTarget.value }))}
-                required
-              />
-              <Select
-                label="Duration per Slot"
-                data={DURATION_OPTIONS}
-                value={formData.duration.toString()}
-                onChange={(value) => value && setFormData(prev => ({ ...prev, duration: parseInt(value) }))}
-                required
-              />
-            </SimpleGrid>
-
-            <Textarea
-              label="Notes (Optional)"
-              placeholder="Add any notes about this availability..."
-              value={formData.notes}
-              onChange={(event) => setFormData(prev => ({ ...prev, notes: event.currentTarget.value }))}
-              rows={3}
-            />
-
-            <Card withBorder padding="md" radius="md">
-              <Stack gap="md">
-                <Checkbox
-                  label="Make this recurring"
-                  checked={formData.isRecurring}
-                  onChange={(event) => setFormData(prev => ({ ...prev, isRecurring: event.currentTarget.checked }))}
+              {/* Provider Dropdown */}
+              <Box mb="lg">
+                <Text size="sm" fw={500} mb="xs" c="dark.7">
+                  Select Provider
+                </Text>
+                <Select
+                  value={selectedProvider}
+                  onChange={(value: string | null) => setSelectedProvider(value || 'John Doe')}
+                  data={PROVIDERS}
+                  leftSection={<IconUser size={18} />}
+                  size="md"
+                  radius="lg"
+                  styles={{
+                    input: {
+                      borderColor: '#e5e7eb',
+                      backgroundColor: '#fafafa',
+                      fontSize: '16px',
+                      fontWeight: 500,
+                      transition: 'all 0.3s ease',
+                      '&:focus': {
+                        borderColor: '#667eea',
+                        backgroundColor: '#ffffff',
+                        boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                        transform: 'translateY(-1px)'
+                      },
+                      '&:hover': {
+                        borderColor: '#667eea',
+                        backgroundColor: '#ffffff'
+                      }
+                    }
+                  }}
                 />
+              </Box>
+
+              {/* Day Availability Table */}
+              <Stack gap="md">
+                {dayAvailabilities.map((day) => (
+                  <Box
+                    key={day.id}
+                    p="md"
+                                style={{
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '12px',
+                      backgroundColor: '#fafafa',
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        borderColor: '#667eea',
+                        backgroundColor: '#ffffff',
+                        boxShadow: '0 4px 12px rgba(102, 126, 234, 0.1)'
+                      }
+                    }}
+                  >
+                    <SimpleGrid cols={3} spacing="md">
+                      <Select
+                        value={day.day}
+                        onChange={(value: string | null) => handleUpdateDayAvailability(day.id, 'day', value || 'Monday')}
+                        data={DAYS_OF_WEEK}
+                                        size="sm"
+                        radius="md"
+                        styles={{
+                          input: {
+                            borderColor: '#e5e7eb',
+                            backgroundColor: '#ffffff',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            '&:focus': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.1)'
+                            }
+                          }
+                        }}
+                      />
+                      
+                      <TimeInput
+                        value={day.fromTime}
+                        onChange={(event) => handleUpdateDayAvailability(day.id, 'fromTime', event.currentTarget.value)}
+                        leftSection={<IconClock size={16} />}
+                        size="sm"
+                        radius="md"
+                        styles={{
+                          input: {
+                            borderColor: '#e5e7eb',
+                            backgroundColor: '#ffffff',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            '&:focus': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.1)'
+                            }
+                          }
+                        }}
+                      />
+                      
+                      <TimeInput
+                        value={day.tillTime}
+                        onChange={(event) => handleUpdateDayAvailability(day.id, 'tillTime', event.currentTarget.value)}
+                        leftSection={<IconClock size={16} />}
+                        size="sm"
+                        radius="md"
+                        styles={{
+                          input: {
+                            borderColor: '#e5e7eb',
+                            backgroundColor: '#ffffff',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            '&:focus': {
+                              borderColor: '#667eea',
+                              boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.1)'
+                            }
+                          }
+                        }}
+                      />
+                    </SimpleGrid>
+                  </Box>
+                ))}
+                      </Stack>
+            </Box>
+
+            {/* Right Section - Slot Creation Setting */}
+            <Box>
+              <Title order={3} size="h4" fw={600} mb="md" c="dark.7">
+                Slot Creation Setting
+              </Title>
+              
+              {/* Time Zone Dropdown */}
+              <Box mb="lg">
+                <Text size="sm" fw={500} mb="xs" c="dark.7">
+                  Time Zone
+                                </Text>
+                <Select
+                  value={selectedTimeZone}
+                  onChange={(value: string | null) => setSelectedTimeZone(value || 'UTC-5 (EST)')}
+                  data={TIME_ZONES}
+                  leftSection={<IconClock size={18} />}
+                  size="md"
+                  radius="lg"
+                  styles={{
+                    input: {
+                      borderColor: '#e5e7eb',
+                      backgroundColor: '#fafafa',
+                      fontSize: '16px',
+                      fontWeight: 500,
+                      transition: 'all 0.3s ease',
+                      '&:focus': {
+                        borderColor: '#667eea',
+                        backgroundColor: '#ffffff',
+                        boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                        transform: 'translateY(-1px)'
+                      },
+                      '&:hover': {
+                        borderColor: '#667eea',
+                        backgroundColor: '#ffffff'
+                      }
+                    }
+                  }}
+                />
+                                        </Box>
+
+              {/* Block Days Section */}
+                      <Box>
+                <Title order={4} size="h5" fw={600} mb="md" c="dark.7">
+                  Block Days
+                </Title>
                 
-                {formData.isRecurring && (
-                  <Select
-                    label="Recurring Pattern"
-                    data={[
-                      { value: 'weekly', label: 'Weekly' },
-                      { value: 'biweekly', label: 'Bi-weekly' },
-                      { value: 'monthly', label: 'Monthly' },
-                    ]}
-                    value={formData.recurringPattern}
-                    onChange={(value) => value && setFormData(prev => ({ ...prev, recurringPattern: value as 'weekly' | 'biweekly' | 'monthly' }))}
-                  />
-                )}
-              </Stack>
-            </Card>
-
-            <Group justify="flex-end" mt="md">
-              <Button variant="light" onClick={closeAddModal}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddSlot} leftSection={<IconCheck size={16} />}>
-                Add Availability
-              </Button>
-            </Group>
-          </Stack>
-        </Modal>
-
-        {/* Edit Availability Modal */}
-        <Modal
-          opened={editModalOpened}
-          onClose={closeEditModal}
-          title="Edit Availability"
-          size="lg"
-          radius="lg"
-        >
-          <Stack gap="md">
-            <SimpleGrid cols={2} spacing="md">
-              <TextInput
-                type="date"
-                label="Date"
-                value={formData.date.toISOString().split('T')[0]}
-                onChange={(event) => {
-                  const newDate = new Date(event.currentTarget.value);
-                  if (!isNaN(newDate.getTime())) {
-                    setFormData(prev => ({ ...prev, date: newDate }));
-                  }
-                }}
-                required
-              />
-              <Select
-                label="Appointment Type"
-                data={APPOINTMENT_TYPES}
-                value={formData.appointmentType}
-                onChange={(value) => value && setFormData(prev => ({ ...prev, appointmentType: value }))}
-                required
-              />
-            </SimpleGrid>
-
-            <SimpleGrid cols={3} spacing="md">
-              <TimeInput
-                label="Start Time"
-                value={formData.startTime}
-                onChange={(event) => setFormData(prev => ({ ...prev, startTime: event.currentTarget.value }))}
-                required
-              />
-              <TimeInput
-                label="End Time"
-                value={formData.endTime}
-                onChange={(event) => setFormData(prev => ({ ...prev, endTime: event.currentTarget.value }))}
-                required
-              />
-              <Select
-                label="Duration per Slot"
-                data={DURATION_OPTIONS}
-                value={formData.duration.toString()}
-                onChange={(value) => value && setFormData(prev => ({ ...prev, duration: parseInt(value) }))}
-                required
-              />
-            </SimpleGrid>
-
-            <Textarea
-              label="Notes (Optional)"
-              placeholder="Add any notes about this availability..."
-              value={formData.notes}
-              onChange={(event) => setFormData(prev => ({ ...prev, notes: event.currentTarget.value }))}
-              rows={3}
-            />
-
-            <Group justify="flex-end" mt="md">
-              <Button variant="light" onClick={closeEditModal}>
-                Cancel
-              </Button>
-              <Button onClick={handleEditSlot} leftSection={<IconCheck size={16} />}>
-                Update Availability
-              </Button>
-            </Group>
-          </Stack>
-        </Modal>
-
-        {/* Templates Modal */}
-        <Modal
-          opened={templateModalOpened}
-          onClose={closeTemplateModal}
-          title="Availability Templates"
-          size="lg"
-          radius="lg"
-        >
-          <Stack gap="md">
-            <Text size="sm" c="dimmed">
-              Apply pre-configured availability templates to quickly set up your schedule.
-            </Text>
-
-            <TextInput
-              type="date"
-              label="Apply to Date"
-              value={formData.date.toISOString().split('T')[0]}
-              onChange={(event) => {
-                const newDate = new Date(event.currentTarget.value);
-                if (!isNaN(newDate.getTime())) {
-                  setFormData(prev => ({ ...prev, date: newDate }));
-                }
-              }}
-              required
-            />
-
-            <Stack gap="sm">
-              {templates.map((template) => (
-                <Card key={template.id} shadow="xs" padding="md" radius="md" withBorder>
-                  <Group justify="space-between">
-                    <Box>
-                      <Group gap="xs" mb="xs">
-                        <Text fw={600} size="sm">{template.name}</Text>
-                        {template.isDefault && (
-                          <Badge variant="light" color="blue" size="xs">
-                            Default
-                          </Badge>
-                        )}
-                      </Group>
-                      <Text size="xs" c="dimmed" mb="sm">
-                        {template.description}
-                      </Text>
-                      <Group gap="xs">
-                        <Text size="xs" c="dimmed">
-                          {template.timeSlots.length} time slots
-                        </Text>
-                        <Text size="xs" c="dimmed">•</Text>
-                        <Text size="xs" c="dimmed">
-                          {template.timeSlots.filter(slot => slot.status === 'available').length} available
-                        </Text>
-                      </Group>
-                    </Box>
-                    <Button
-                      size="xs"
-                      variant="light"
-                      onClick={() => applyTemplate(template)}
+                <Stack gap="md">
+                  {blockDays.map((blockDay) => (
+                    <Box
+                      key={blockDay.id}
+                      p="md"
+                                      style={{
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '12px',
+                        backgroundColor: '#fafafa',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                          borderColor: '#667eea',
+                          backgroundColor: '#ffffff',
+                          boxShadow: '0 4px 12px rgba(102, 126, 234, 0.1)'
+                        }
+                      }}
                     >
-                      Apply
-                    </Button>
+                      <Group justify="space-between" align="flex-start">
+                        <SimpleGrid cols={3} spacing="md" style={{ flex: 1 }}>
+                          <DateInput
+                            value={blockDay.date}
+                            onChange={(value) => handleUpdateBlockDay(blockDay.id, 'date', value)}
+                            leftSection={<IconCalendar size={16} />}
+                            placeholder="Select date"
+                            size="sm"
+                            radius="md"
+                            styles={{
+                              input: {
+                                borderColor: '#e5e7eb',
+                                backgroundColor: '#ffffff',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                '&:focus': {
+                                  borderColor: '#667eea',
+                                  boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.1)'
+                                }
+                              }
+                            }}
+                          />
+                          
+              <TimeInput
+                            value={blockDay.fromTime}
+                            onChange={(event) => handleUpdateBlockDay(blockDay.id, 'fromTime', event.currentTarget.value)}
+                            leftSection={<IconClock size={16} />}
+                            size="sm"
+                            radius="md"
+                            styles={{
+                              input: {
+                                borderColor: '#e5e7eb',
+                                backgroundColor: '#ffffff',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                '&:focus': {
+                                  borderColor: '#667eea',
+                                  boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.1)'
+                                }
+                              }
+                            }}
+                          />
+                          
+              <TimeInput
+                            value={blockDay.tillTime}
+                            onChange={(event) => handleUpdateBlockDay(blockDay.id, 'tillTime', event.currentTarget.value)}
+                            leftSection={<IconClock size={16} />}
+                            size="sm"
+                            radius="md"
+                            styles={{
+                              input: {
+                                borderColor: '#e5e7eb',
+                                backgroundColor: '#ffffff',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                '&:focus': {
+                                  borderColor: '#667eea',
+                                  boxShadow: '0 0 0 2px rgba(102, 126, 234, 0.1)'
+                                }
+                              }
+                            }}
+              />
+            </SimpleGrid>
+
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          size="sm"
+                          onClick={() => handleRemoveBlockDay(blockDay.id)}
+                          style={{
+                            border: '1px solid #fecaca',
+                            backgroundColor: '#fef2f2',
+                            color: '#dc2626',
+                            '&:hover': {
+                              backgroundColor: '#fee2e2',
+                              borderColor: '#fca5a5'
+                            }
+                          }}
+                        >
+                          <IconTrash size={16} />
+                        </ActionIcon>
                   </Group>
-                </Card>
+                    </Box>
               ))}
             </Stack>
 
-            <Group justify="flex-end" mt="md">
-              <Button variant="light" onClick={closeTemplateModal}>
-                Close
+                <Button
+                  leftSection={<IconPlus size={16} />}
+                  variant="outline"
+                  color="blue"
+                  size="sm"
+                  mt="md"
+                  onClick={handleAddBlockDay}
+                  styles={{
+                    root: {
+                      borderColor: '#667eea',
+                      color: '#667eea',
+                      fontWeight: 500,
+                      '&:hover': {
+                        backgroundColor: '#667eea',
+                        color: '#ffffff'
+                      }
+                    }
+                  }}
+                >
+                  + Add Block Days
               </Button>
-            </Group>
-          </Stack>
-        </Modal>
+              </Box>
+            </Box>
+          </SimpleGrid>
+        )}
 
-        {/* Settings Drawer */}
-        <Drawer
-          opened={settingsOpened}
-          onClose={closeSettings}
-          title="Availability Settings"
-          position="right"
+        {/* Footer */}
+        <Divider my="xl" />
+        <Group justify="flex-end" gap="md">
+          <Button
+            variant="outline"
+            color="gray"
+            leftSection={<IconX size={18} />}
+            onClick={onClose}
           size="md"
-        >
-          <Stack gap="md">
-            <Card shadow="xs" padding="md" radius="md" withBorder>
-              <Stack gap="md">
-                <Text fw={600} size="sm">General Settings</Text>
-                
-                <Switch
-                  label="Auto-save changes"
-                  description="Automatically save availability changes"
-                  checked={autoSave}
-                  onChange={(event) => setAutoSave(event.currentTarget.checked)}
-                />
-                
-                <Switch
-                  label="Show conflicts"
-                  description="Highlight scheduling conflicts"
-                  checked={showConflicts}
-                  onChange={(event) => setShowConflicts(event.currentTarget.checked)}
-                />
-                
-                <NumberInput
-                  label="Default appointment duration"
-                  description="Default duration for new appointments (minutes)"
-                  value={formData.duration}
-                  onChange={(value) => setFormData(prev => ({ ...prev, duration: Number(value) || 30 }))}
-                  min={15}
-                  max={240}
-                  step={15}
-                />
-              </Stack>
-            </Card>
-
-            <Card shadow="xs" padding="md" radius="md" withBorder>
-              <Stack gap="md">
-                <Text fw={600} size="sm">Notification Settings</Text>
-                
-                <Switch
-                  label="New booking notifications"
-                  description="Get notified when patients book appointments"
-                  defaultChecked
-                />
-                
-                <Switch
-                  label="Cancellation notifications"
-                  description="Get notified when appointments are cancelled"
-                  defaultChecked
-                />
-                
-                <Switch
-                  label="Daily schedule summary"
-                  description="Receive daily email with schedule overview"
-                  defaultChecked
-                />
-              </Stack>
-            </Card>
-
-            <Card shadow="xs" padding="md" radius="md" withBorder>
-              <Stack gap="md">
-                <Text fw={600} size="sm">Calendar Integration</Text>
-                
-                <Button variant="light" fullWidth leftSection={<IconBrandGoogleFilled size={16} />}>
-                  Sync with Google Calendar
-                </Button>
-                
-                <Button variant="light" fullWidth leftSection={<IconCalendar size={16} />}>
-                  Sync with Outlook
-                </Button>
-                
-                <Button variant="light" fullWidth leftSection={<IconCalendar size={16} />}>
-                  Export to iCal
-                </Button>
-              </Stack>
-            </Card>
-
-            <Group justify="flex-end" mt="md">
-              <Button variant="light" onClick={closeSettings}>
+            radius="lg"
+            styles={{
+              root: {
+                borderColor: '#d1d5db',
+                color: '#6b7280',
+                fontWeight: 500,
+                '&:hover': {
+                  backgroundColor: '#f3f4f6',
+                  borderColor: '#9ca3af'
+                }
+              }
+            }}
+          >
                 Close
               </Button>
-              <Button leftSection={<IconDeviceFloppy size={16} />}>
-                Save Settings
+          <Button
+            color="blue"
+            leftSection={<IconCheck size={18} />}
+            onClick={handleSave}
+            size="md"
+            radius="lg"
+            gradient={{ from: '#667eea', to: '#764ba2', deg: 135 }}
+            styles={{
+              root: {
+                fontWeight: 600,
+                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)'
+                }
+              }
+            }}
+          >
+            Save
               </Button>
             </Group>
-          </Stack>
-        </Drawer>
-      </Box>
+      </Paper>
+    </Container>
   );
 };
 

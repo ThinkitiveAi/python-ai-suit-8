@@ -165,42 +165,104 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
       src="data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23e0f2fe' fill-opacity='0.3'%3E%3Cpath d='M40 40c0-11.046-8.954-20-20-20s-20 8.954-20 20 8.954 20 20 20 20-8.954 20-20zm20 0c0-11.046-8.954-20-20-20s-20 8.954-20 20 8.954 20 20 20 20-8.954 20-20z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #e0f7fa 0%, #f3e5f5 50%, #fff3e0 100%)',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        position: 'relative',
+        overflow: 'hidden'
       }}
     >
-      <Container size="sm" py={60}>
+      {/* Animated background elements */}
+      <div style={{
+        position: 'absolute',
+        top: '-50%',
+        left: '-50%',
+        width: '200%',
+        height: '200%',
+        background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+        animation: 'float 20s ease-in-out infinite',
+        pointerEvents: 'none'
+      }} />
+      
+      <Container size="sm" py={80}>
         <Center>
           <Paper
-            shadow="md"
-            p={50}
+            shadow="xl"
+            p={60}
             radius="xl"
             style={{
               width: '100%',
-              maxWidth: 480,
-              background: 'rgba(255, 255, 255, 0.98)',
+              maxWidth: 520,
+              background: 'rgba(255, 255, 255, 0.95)',
               backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              position: 'relative',
+              overflow: 'hidden'
             }}
           >
+            {/* Decorative elements */}
+            <div style={{
+              position: 'absolute',
+              top: '-20px',
+              right: '-20px',
+              width: '100px',
+              height: '100px',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              borderRadius: '50%',
+              opacity: 0.1,
+              transform: 'rotate(45deg)'
+            }} />
+            
+            <div style={{
+              position: 'absolute',
+              bottom: '-30px',
+              left: '-30px',
+              width: '120px',
+              height: '120px',
+              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              borderRadius: '50%',
+              opacity: 0.08,
+              transform: 'rotate(-30deg)'
+            }} />
+
             {/* Header Section */}
-            <Stack align="center" mb={40}>
+            <Stack align="center" mb={50}>
               <Box
                 style={{
-                  background: 'linear-gradient(135deg, #3b82f6 0%, #10b981 100%)',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   borderRadius: '50%',
-                  padding: 20,
+                  padding: 25,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 4px 20px rgba(59, 130, 246, 0.3)',
+                  boxShadow: '0 10px 30px rgba(102, 126, 234, 0.4)',
+                  position: 'relative',
+                  marginBottom: '20px'
                 }}
               >
-                <IconHeart size={36} color="white" />
+                <IconHeart size={40} color="white" />
+                {/* Glow effect */}
+                <div style={{
+                  position: 'absolute',
+                  top: '-10px',
+                  left: '-10px',
+                  right: '-10px',
+                  bottom: '-10px',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  borderRadius: '50%',
+                  opacity: 0.3,
+                  filter: 'blur(10px)',
+                  zIndex: -1
+                }} />
               </Box>
-              <Title order={1} size="h1" fw={600} c="dark.8" ta="center">
+              <Title order={1} size="h1" fw={700} c="dark.8" ta="center" style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>
                 Welcome Back
               </Title>
-              <Text size="lg" c="dimmed" ta="center" maw={400}>
+              <Text size="lg" c="dimmed" ta="center" maw={400} style={{ lineHeight: 1.6 }}>
                 Sign in to access your health records, appointments, and care team
               </Text>
             </Stack>
@@ -208,17 +270,18 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
             {/* Success State */}
             {loginState.success && (
               <Alert
-                icon={<IconCheck size={18} />}
+                icon={<IconCheck size={20} />}
                 title="Welcome back!"
-                color="teal"
+                color="green"
                 mb="xl"
-                radius="md"
+                radius="lg"
                 style={{
-                  backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                  border: '1px solid rgba(16, 185, 129, 0.2)',
+                  background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%)',
+                  border: '1px solid rgba(34, 197, 94, 0.2)',
+                  boxShadow: '0 4px 15px rgba(34, 197, 94, 0.1)'
                 }}
               >
-                <Text size="sm">
+                <Text size="sm" style={{ lineHeight: 1.5 }}>
                   You're successfully signed in. Taking you to your dashboard...
                 </Text>
               </Alert>
@@ -227,25 +290,26 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
             {/* Error State */}
             {loginState.error && (
               <Alert
-                icon={<IconAlertCircle size={18} />}
+                icon={<IconAlertCircle size={20} />}
                 title="Having trouble signing in?"
                 color="orange"
                 mb="xl"
-                radius="md"
+                radius="lg"
                 style={{
-                  backgroundColor: 'rgba(251, 146, 60, 0.1)',
+                  background: 'linear-gradient(135deg, rgba(251, 146, 60, 0.1) 0%, rgba(245, 158, 11, 0.1) 100%)',
                   border: '1px solid rgba(251, 146, 60, 0.2)',
+                  boxShadow: '0 4px 15px rgba(251, 146, 60, 0.1)'
                 }}
               >
-                <Text size="sm" mb="sm">
+                <Text size="sm" mb="sm" style={{ lineHeight: 1.5 }}>
                   {loginState.error}
                 </Text>
                 <Group gap="xs">
-                  <Anchor size="sm" c="orange.7" fw={500}>
+                  <Anchor size="sm" c="orange.7" fw={600} style={{ textDecoration: 'none' }}>
                     Reset Password
                   </Anchor>
                   <Text size="sm" c="dimmed">•</Text>
-                  <Anchor size="sm" c="orange.7" fw={500}>
+                  <Anchor size="sm" c="orange.7" fw={600} style={{ textDecoration: 'none' }}>
                     Contact Support
                   </Anchor>
                 </Group>
@@ -260,13 +324,13 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
             >
               {({ values, errors, touched, setFieldValue }) => (
                 <Form>
-                  <Stack gap="lg">
+                  <Stack gap="xl">
                     {/* Email/Phone Input */}
                     <Field name="credential">
                       {({ field }: any) => (
                         <Box>
                           <Group gap="xs" mb="xs">
-                            <Text size="sm" fw={500} c="dark.7">
+                            <Text size="sm" fw={600} c="dark.7">
                               Email or Phone Number
                             </Text>
                             <Tooltip
@@ -292,18 +356,30 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
                                 borderColor: touched.credential && errors.credential ? '#f59e0b' : '#e5e7eb',
                                 backgroundColor: '#fafafa',
                                 fontSize: '16px',
+                                fontWeight: 500,
+                                transition: 'all 0.3s ease',
                                 '&:focus': {
-                                  borderColor: '#3b82f6',
+                                  borderColor: '#667eea',
                                   backgroundColor: '#ffffff',
+                                  boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                                  transform: 'translateY(-1px)'
+                                },
+                                '&:hover': {
+                                  borderColor: '#667eea',
+                                  backgroundColor: '#ffffff'
                                 },
                                 '&::placeholder': {
                                   color: '#9ca3af',
+                                  fontWeight: 400
                                 }
+                              },
+                              leftSection: {
+                                color: '#667eea'
                               }
                             }}
                           />
                           {touched.credential && !errors.credential && values.credential && (
-                            <Text size="xs" c="teal.6" mt="xs">
+                            <Text size="xs" c="green.6" mt="xs" style={{ fontWeight: 500 }}>
                               ✓ {values.credential.includes('@') ? 'Valid email format' : 'Valid phone format'}
                             </Text>
                           )}
@@ -316,7 +392,7 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
                       {({ field }: any) => (
                         <Box>
                           <Group gap="xs" mb="xs">
-                            <Text size="sm" fw={500} c="dark.7">
+                            <Text size="sm" fw={600} c="dark.7">
                               Password
                             </Text>
                             <Tooltip
@@ -345,13 +421,28 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
                                 borderColor: touched.password && errors.password ? '#f59e0b' : '#e5e7eb',
                                 backgroundColor: '#fafafa',
                                 fontSize: '16px',
+                                fontWeight: 500,
+                                transition: 'all 0.3s ease',
                                 '&:focus': {
-                                  borderColor: '#3b82f6',
+                                  borderColor: '#667eea',
                                   backgroundColor: '#ffffff',
+                                  boxShadow: '0 0 0 3px rgba(102, 126, 234, 0.1)',
+                                  transform: 'translateY(-1px)'
+                                },
+                                '&:hover': {
+                                  borderColor: '#667eea',
+                                  backgroundColor: '#ffffff'
                                 },
                                 '&::placeholder': {
                                   color: '#9ca3af',
+                                  fontWeight: 400
                                 }
+                              },
+                              leftSection: {
+                                color: '#667eea'
+                              },
+                              visibilityToggle: {
+                                color: '#667eea'
                               }
                             }}
                           />
@@ -360,7 +451,7 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
                     </Field>
 
                     {/* Remember Me & Forgot Password */}
-                    <Group justify="space-between" mt="xs">
+                    <Group justify="space-between" mt="md">
                       <Field name="rememberMe">
                         {({ field }: any) => (
                           <Group gap="xs">
@@ -370,9 +461,15 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
                               onChange={(event) => setFieldValue('rememberMe', event.currentTarget.checked)}
                               disabled={loginState.isLoading || loginState.success}
                               size="sm"
-                              color="teal"
+                              color="blue"
+                              styles={{
+                                input: {
+                                  backgroundColor: '#667eea',
+                                  borderColor: '#667eea'
+                                }
+                              }}
                             />
-                            <Text size="sm" c="dark.6">
+                            <Text size="sm" c="dark.6" fw={500}>
                               Keep me signed in
                             </Text>
                             <Tooltip
@@ -391,9 +488,16 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
                       <Anchor
                         size="sm"
                         c="blue.6"
-                        fw={500}
+                        fw={600}
                         onClick={() => console.log('Navigate to forgot password')}
-                        style={{ cursor: 'pointer' }}
+                        style={{ 
+                          cursor: 'pointer',
+                          textDecoration: 'none',
+                          transition: 'color 0.3s ease',
+                          '&:hover': {
+                            color: '#4f46e5'
+                          }
+                        }}
                       >
                         Forgot password?
                       </Anchor>
@@ -405,20 +509,24 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
                       size="xl"
                       radius="lg"
                       fullWidth
-                      mt="lg"
+                      mt="xl"
                       loading={loginState.isLoading}
                       disabled={loginState.success}
-                      gradient={{ from: 'blue.5', to: 'teal.5', deg: 135 }}
+                      gradient={{ from: '#667eea', to: '#764ba2', deg: 135 }}
                       leftSection={loginState.success ? <IconCheck size={20} /> : <IconHeart size={20} />}
                       styles={{
                         root: {
-                          height: '56px',
+                          height: '60px',
                           fontSize: '16px',
                           fontWeight: 600,
-                          boxShadow: loginState.isLoading ? 'none' : '0 4px 16px rgba(59, 130, 246, 0.3)',
+                          boxShadow: loginState.isLoading ? 'none' : '0 8px 25px rgba(102, 126, 234, 0.3)',
+                          transition: 'all 0.3s ease',
                           '&:hover': {
-                            transform: loginState.isLoading ? 'none' : 'translateY(-1px)',
-                            boxShadow: loginState.isLoading ? 'none' : '0 6px 20px rgba(59, 130, 246, 0.4)',
+                            transform: loginState.isLoading ? 'none' : 'translateY(-2px)',
+                            boxShadow: loginState.isLoading ? 'none' : '0 12px 35px rgba(102, 126, 234, 0.4)',
+                          },
+                          '&:active': {
+                            transform: 'translateY(0px)'
                           }
                         }
                       }}
@@ -427,10 +535,10 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
                     </Button>
 
                     {/* Security Notice */}
-                    <Center mt="md">
+                    <Center mt="lg">
                       <Group gap="xs">
-                        <IconShieldCheck size={16} color="#10b981" />
-                        <Text size="xs" c="dimmed" ta="center">
+                        <IconShieldCheck size={18} color="#667eea" />
+                        <Text size="sm" c="dimmed" ta="center" fw={500}>
                           Your information is protected with bank-level security
                         </Text>
                       </Group>
@@ -445,15 +553,22 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
                     />
 
                     {/* Registration and Provider Links */}
-                    <Stack gap="md">
+                    <Stack gap="lg">
                       <Center>
-                        <Text size="sm" c="dimmed" ta="center">
+                        <Text size="sm" c="dimmed" ta="center" fw={500}>
                           Don't have a patient account yet?{' '}
                           <Anchor
                             c="blue.6"
-                            fw={600}
+                            fw={700}
                             onClick={onNavigateToRegistration}
-                            style={{ cursor: 'pointer' }}
+                            style={{ 
+                              cursor: 'pointer',
+                              textDecoration: 'none',
+                              transition: 'color 0.3s ease',
+                              '&:hover': {
+                                color: '#4f46e5'
+                              }
+                            }}
                           >
                             Create Account
                           </Anchor>
@@ -461,13 +576,20 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
                       </Center>
 
                       <Center>
-                        <Text size="sm" c="dimmed" ta="center">
+                        <Text size="sm" c="dimmed" ta="center" fw={500}>
                           Are you a healthcare provider?{' '}
                           <Anchor
-                            c="teal.6"
-                            fw={600}
+                            c="purple.6"
+                            fw={700}
                             onClick={onNavigateToProviderLogin}
-                            style={{ cursor: 'pointer' }}
+                            style={{ 
+                              cursor: 'pointer',
+                              textDecoration: 'none',
+                              transition: 'color 0.3s ease',
+                              '&:hover': {
+                                color: '#7c3aed'
+                              }
+                            }}
                           >
                             Provider Sign In
                           </Anchor>
@@ -480,10 +602,15 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
             </Formik>
 
             {/* Support Section */}
-            <Box mt="xl" pt="lg" style={{ borderTop: '1px solid #f3f4f6' }}>
-              <Stack gap="sm">
+            <Box mt="xl" pt="lg" style={{ 
+              borderTop: '1px solid rgba(229, 231, 235, 0.5)',
+              background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.02) 0%, rgba(118, 75, 162, 0.02) 100%)',
+              borderRadius: 'lg',
+              padding: '20px'
+            }}>
+              <Stack gap="md">
                 <Center>
-                  <Text size="sm" fw={500} c="dark.6">
+                  <Text size="sm" fw={600} c="dark.6">
                     Need help signing in?
                   </Text>
                 </Center>
@@ -491,24 +618,48 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
                   <Anchor 
                     size="sm" 
                     c="gray.6" 
+                    fw={500}
                     onClick={() => console.log('Navigate to help')}
-                    style={{ cursor: 'pointer' }}
+                    style={{ 
+                      cursor: 'pointer',
+                      textDecoration: 'none',
+                      transition: 'color 0.3s ease',
+                      '&:hover': {
+                        color: '#667eea'
+                      }
+                    }}
                   >
                     Help Center
                   </Anchor>
                   <Anchor 
                     size="sm" 
                     c="gray.6" 
+                    fw={500}
                     onClick={() => console.log('Contact support')}
-                    style={{ cursor: 'pointer' }}
+                    style={{ 
+                      cursor: 'pointer',
+                      textDecoration: 'none',
+                      transition: 'color 0.3s ease',
+                      '&:hover': {
+                        color: '#667eea'
+                      }
+                    }}
                   >
                     Contact Support
                   </Anchor>
                   <Anchor 
                     size="sm" 
                     c="gray.6" 
+                    fw={500}
                     onClick={() => console.log('Technical support')}
-                    style={{ cursor: 'pointer' }}
+                    style={{ 
+                      cursor: 'pointer',
+                      textDecoration: 'none',
+                      transition: 'color 0.3s ease',
+                      '&:hover': {
+                        color: '#667eea'
+                      }
+                    }}
                   >
                     Technical Issues
                   </Anchor>
@@ -518,11 +669,11 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
 
             {/* Footer Information */}
             <Center mt="lg">
-              <Text size="xs" c="dimmed" ta="center" maw={400}>
+              <Text size="xs" c="dimmed" ta="center" maw={450} style={{ lineHeight: 1.5 }}>
                 By signing in, you agree to our{' '}
-                <Anchor size="xs" c="dimmed" td="underline">Terms of Service</Anchor>
+                <Anchor size="xs" c="dimmed" td="underline" fw={500}>Terms of Service</Anchor>
                 {' '}and{' '}
-                <Anchor size="xs" c="dimmed" td="underline">Privacy Policy</Anchor>.
+                <Anchor size="xs" c="dimmed" td="underline" fw={500}>Privacy Policy</Anchor>.
                 Your health information is protected under HIPAA.
               </Text>
             </Center>
