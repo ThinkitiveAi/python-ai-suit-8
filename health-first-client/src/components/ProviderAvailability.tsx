@@ -139,7 +139,7 @@ const ProviderAvailability: React.FC<ProviderAvailabilityProps> = ({
       const endDate = '2025-08-11';
       
       const response = await axios.get(
-        `http://192.168.0.252:5000/api/v1/provider/${providerId}/availability`,
+        `http://192.168.0.252:5007/api/v1/provider/${providerId}/availability`,
         {
           params: {
             start_date: startDate,

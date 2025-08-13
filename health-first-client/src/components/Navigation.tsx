@@ -15,6 +15,7 @@ import {
   IconStethoscope,
   IconHeart,
   IconSettings,
+  IconList,
 } from '@tabler/icons-react';
 
 const Navigation: React.FC = () => {
@@ -102,6 +103,81 @@ const Navigation: React.FC = () => {
             </Group>
           </Box>
 
+          {/* Patient Management Pages */}
+          <Box>
+            <Title order={3} size="h4" fw={600} mb="md" c="dark.7">
+              Patient Management
+            </Title>
+            <Group gap="md">
+              <Button
+                leftSection={<IconHeart size={18} />}
+                variant="filled"
+                color="pink"
+                onClick={() => navigateTo('/patient-dashboard')}
+                size="md"
+                radius="lg"
+                gradient={{ from: '#ec4899', to: '#be185d', deg: 135 }}
+                styles={{
+                  root: {
+                    fontWeight: 600,
+                    boxShadow: '0 4px 12px rgba(236, 72, 153, 0.3)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-1px)',
+                      boxShadow: '0 6px 16px rgba(236, 72, 153, 0.4)'
+                    }
+                  }
+                }}
+              >
+                Patient Dashboard
+              </Button>
+              <Button
+                leftSection={<IconCalendar size={18} />}
+                variant="filled"
+                color="pink"
+                onClick={() => navigateTo('/patient-appointment-booking')}
+                size="md"
+                radius="lg"
+                gradient={{ from: '#ec4899', to: '#be185d', deg: 135 }}
+                styles={{
+                  root: {
+                    fontWeight: 600,
+                    boxShadow: '0 4px 12px rgba(236, 72, 153, 0.3)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-1px)',
+                      boxShadow: '0 6px 16px rgba(236, 72, 153, 0.4)'
+                    }
+                  }
+                }}
+              >
+                Book Appointment
+              </Button>
+              <Button
+                leftSection={<IconList size={18} />}
+                variant="filled"
+                color="pink"
+                onClick={() => navigateTo('/appointment-listing')}
+                size="md"
+                radius="lg"
+                gradient={{ from: '#ec4899', to: '#be185d', deg: 135 }}
+                styles={{
+                  root: {
+                    fontWeight: 600,
+                    boxShadow: '0 4px 12px rgba(236, 72, 153, 0.3)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      transform: 'translateY(-1px)',
+                      boxShadow: '0 6px 16px rgba(236, 72, 153, 0.4)'
+                    }
+                  }
+                }}
+              >
+                Appointment Listing
+              </Button>
+            </Group>
+          </Box>
+
           {/* Provider Management Pages */}
           <Box>
             <Title order={3} size="h4" fw={600} mb="md" c="dark.7">
@@ -167,6 +243,15 @@ const Navigation: React.FC = () => {
             <Stack gap="xs">
               <Text size="xs" c="dimmed" style={{ fontFamily: 'monospace' }}>
                 • Patient Login: /auth/patient-login
+              </Text>
+              <Text size="xs" c="pink" style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                • Patient Dashboard: /auth/patient-dashboard
+              </Text>
+              <Text size="xs" c="pink" style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                • Book Appointment: /auth/patient-appointment-booking
+              </Text>
+              <Text size="xs" c="pink" style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                • Appointment Listing: /auth/appointment-listing
               </Text>
               <Text size="xs" c="dimmed" style={{ fontFamily: 'monospace' }}>
                 • Provider Login: /auth/provider-login

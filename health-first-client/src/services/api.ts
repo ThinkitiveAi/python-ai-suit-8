@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Base URL for the API - updated to match the curl command
-const BASE_URL = 'http://192.168.0.49:5000';
+const BASE_URL = 'http://192.168.0.252:5007';
 
 // Dummy credentials for testing
 export const DUMMY_CREDENTIALS = {

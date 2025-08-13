@@ -1,7 +1,9 @@
 import React from 'react';
-import { createRouter, createRoute, createRootRoute } from '@tanstack/react-router';
+import { createRouter, createRoute, createRootRoute, Outlet } from '@tanstack/react-router';
 import { MantineProvider } from '@mantine/core';
 import PatientLogin from './components/PatientLogin';
+import PatientAppointmentBooking from './components/PatientAppointmentBooking';
+import PatientDashboard from './components/PatientDashboard';
 import ProviderRegistration from './components/ProviderRegistration';
 import ProviderAvailability from './components/ProviderAvailability';
 import ProviderDashboard from './components/ProviderDashboard';
@@ -62,10 +64,7 @@ const rootRoute = createRootRoute({
   component: () => (
     <MantineProvider theme={theme}>
       <div id="app">
-        {/* Navigation can be added here */}
-        <div id="content">
-          {/* This is where child routes will render */}
-        </div>
+        <Outlet />
       </div>
     </MantineProvider>
   ),
@@ -75,7 +74,9 @@ const rootRoute = createRootRoute({
 const authRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/auth',
-  component: () => <div>Auth Layout</div>,
+  component: () => (
+    <Outlet />
+  ),
 });
 
 const patientLoginRoute = createRoute({
@@ -87,6 +88,21 @@ const patientLoginRoute = createRoute({
       onNavigateToProviderLogin={() => window.location.href = '/auth/provider-login'}
     />
   ),
+});
+
+const patientAppointmentBookingRoute = createRoute({
+  getParentRoute: () => authRoute,
+  path: '/patient-appointment-booking',
+  component: PatientAppointmentBooking,
+});
+
+const patientDashboardRoute = createRoute({
+  getParentRoute: () => authRoute,
+  path: '/patient-dashboard',
+  component: () => {
+    console.log('PatientDashboard route is being matched');
+    return <PatientDashboard />;
+  },
 });
 
 const providerLoginRoute = createRoute({
@@ -128,6 +144,8 @@ const routeTree = rootRoute.addChildren([
   authRoute.addChildren([
     navigationRoute,
     patientLoginRoute,
+    patientAppointmentBookingRoute,
+    patientDashboardRoute,
     providerLoginRoute,
     providerRegisterRoute,
     providerAvailabilityRoute,

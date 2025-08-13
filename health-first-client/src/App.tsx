@@ -46,6 +46,10 @@ import {
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import PatientLogin from "./components/PatientLogin";
+import PatientDashboard from "./components/PatientDashboard";
+import PatientAppointmentBooking from "./components/PatientAppointmentBooking";
+import ScheduleAppointmentModal from "./components/ScheduleAppointmentModal";
+import AppointmentListing from "./components/AppointmentListing";
 import ProviderRegistration from "./components/ProviderRegistration";
 import PatientRegistration from "./components/PatientRegistration";
 import ProviderLayout from "./components/ProviderLayout";
@@ -561,12 +565,31 @@ const patientRegisterRoute = createRoute({
   getParentRoute: () => authRoute,
   path: "/patient-register",
   component: () => {
-    const navigate = useNavigate();
-    return (
-      <PatientRegistration
-        onNavigateToLogin={() => navigate({ to: "/auth/patient-login" })}
-      />
-    );
+    return <PatientRegistration />;
+  },
+});
+
+const patientDashboardRoute = createRoute({
+  getParentRoute: () => authRoute,
+  path: "/patient-dashboard",
+  component: () => {
+    return <PatientDashboard />;
+  },
+});
+
+const patientAppointmentBookingRoute = createRoute({
+  getParentRoute: () => authRoute,
+  path: "/patient-appointment-booking",
+  component: () => {
+    return <PatientAppointmentBooking />;
+  },
+});
+
+const appointmentListingRoute = createRoute({
+  getParentRoute: () => authRoute,
+  path: "/appointment-listing",
+  component: () => {
+    return <AppointmentListing />;
   },
 });
 
@@ -659,6 +682,9 @@ const routeTree = rootRoute.addChildren([
   authRoute.addChildren([
     patientLoginRoute,
     patientRegisterRoute,
+    patientDashboardRoute,
+    patientAppointmentBookingRoute,
+    appointmentListingRoute,
     providerLoginRoute,
     providerRegisterRoute,
   ]),

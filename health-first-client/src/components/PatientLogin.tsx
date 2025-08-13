@@ -120,7 +120,7 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
       // Redirect to patient dashboard after success
       setTimeout(() => {
         console.log('Redirecting to patient dashboard...');
-        // window.location.href = '/patient-dashboard';
+        window.location.href = '/auth/patient-dashboard';
       }, 1500);
     } catch (error: any) {
       console.error('Patient login error:', error);
